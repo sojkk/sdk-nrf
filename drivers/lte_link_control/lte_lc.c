@@ -20,6 +20,8 @@
 
 LOG_MODULE_REGISTER(lte_lc, CONFIG_LTE_LINK_CONTROL_LOG_LEVEL);
 
+#define CONFIG_LTE_PDP_CMD                      1
+
 #define LC_MAX_READ_LENGTH			128
 #define AT_CMD_SIZE(x)				(sizeof(x) - 1)
 #define AT_RESPONSE_PREFIX_INDEX		0
@@ -75,13 +77,15 @@ static const char cereg_5_subscribe[] = AT_CEREG_5;
 
 #if defined(CONFIG_LTE_LOCK_BANDS)
 /* Lock LTE bands 3, 4, 13 and 20 (volatile setting) */
-static const char lock_bands[] = "AT%XBANDLOCK=2,\""CONFIG_LTE_LOCK_BAND_MASK
-				 "\"";
+//static const char lock_bands[] = "AT%XBANDLOCK=2,\""CONFIG_LTE_LOCK_BAND_MASK
+static const char lock_bands[] = "AT%XBANDLOCK=2,\"00000100\"";
 #endif
 #if defined(CONFIG_LTE_LOCK_PLMN)
 /* Lock PLMN */
-static const char lock_plmn[] = "AT+COPS=1,2,\""
-				 CONFIG_LTE_LOCK_PLMN_STRING"\"";
+//static const char lock_plmn[] = "AT+COPS=1,2,\""
+//			 CONFIG_LTE_LOCK_PLMN_STRING"\"";
+static const char lock_plmn[] = "AT+COPS=1,2,\"45400\"";
+
 #endif
 /* Request eDRX to be disabled */
 static const char edrx_disable[] = "AT+CEDRXS=3";
@@ -122,9 +126,12 @@ static const char nw_mode_fallback[] = "AT%XSYSTEMMODE=0,1,1,0";
 
 static struct k_sem link;
 
-#if defined(CONFIG_LTE_PDP_CMD) && defined(CONFIG_LTE_PDP_CONTEXT)
-static const char cgdcont[] = "AT+CGDCONT="CONFIG_LTE_PDP_CONTEXT;
-#endif
+//#if defined(CONFIG_LTE_PDP_CMD) && defined(CONFIG_LTE_PDP_CONTEXT)
+//static const char cgdcont[] = "AT+CGDCONT="CONFIG_LTE_PDP_CONTEXT;
+//#endif
+//#if defined(CONFIG_LTE_PDP_CMD)
+static const char cgdcont[] = "AT+CGDCONT=0,\"IP\",\"nbiotdirect\",,,,1";
+//#endif
 #if defined(CONFIG_LTE_PDN_AUTH_CMD) && defined(CONFIG_LTE_PDN_AUTH)
 static const char cgauth[] = "AT+CGAUTH="CONFIG_LTE_PDN_AUTH;
 #endif
@@ -199,12 +206,12 @@ static int w_lte_lc_init(void)
 	}
 	LOG_INF("Using legacy LTE PCO mode...");
 #endif
-#if defined(CONFIG_LTE_PDP_CMD)
+//#if defined(CONFIG_LTE_PDP_CMD)
 	if (at_cmd_write(cgdcont, NULL, 0, NULL) != 0) {
 		return -EIO;
 	}
 	LOG_INF("PDP Context: %s", log_strdup(cgdcont));
-#endif
+//#endif
 #if defined(CONFIG_LTE_PDN_AUTH_CMD)
 	if (at_cmd_write(cgauth, NULL, 0, NULL) != 0) {
 		return -EIO;
