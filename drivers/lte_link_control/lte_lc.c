@@ -20,8 +20,6 @@
 
 LOG_MODULE_REGISTER(lte_lc, CONFIG_LTE_LINK_CONTROL_LOG_LEVEL);
 
-#define CONFIG_LTE_PDP_CMD                      1
-
 #define LC_MAX_READ_LENGTH			128
 #define AT_CMD_SIZE(x)				(sizeof(x) - 1)
 #define AT_RESPONSE_PREFIX_INDEX		0
@@ -129,9 +127,9 @@ static struct k_sem link;
 //#if defined(CONFIG_LTE_PDP_CMD) && defined(CONFIG_LTE_PDP_CONTEXT)
 //static const char cgdcont[] = "AT+CGDCONT="CONFIG_LTE_PDP_CONTEXT;
 //#endif
-//#if defined(CONFIG_LTE_PDP_CMD)
+#if defined(CONFIG_LTE_PDP_CMD)
 static const char cgdcont[] = "AT+CGDCONT=0,\"IP\",\"nbiotdirect\",,,,1";
-//#endif
+#endif
 #if defined(CONFIG_LTE_PDN_AUTH_CMD) && defined(CONFIG_LTE_PDN_AUTH)
 static const char cgauth[] = "AT+CGAUTH="CONFIG_LTE_PDN_AUTH;
 #endif
@@ -206,12 +204,12 @@ static int w_lte_lc_init(void)
 	}
 	LOG_INF("Using legacy LTE PCO mode...");
 #endif
-//#if defined(CONFIG_LTE_PDP_CMD)
+#if defined(CONFIG_LTE_PDP_CMD)
 	if (at_cmd_write(cgdcont, NULL, 0, NULL) != 0) {
 		return -EIO;
 	}
 	LOG_INF("PDP Context: %s", log_strdup(cgdcont));
-//#endif
+#endif
 #if defined(CONFIG_LTE_PDN_AUTH_CMD)
 	if (at_cmd_write(cgauth, NULL, 0, NULL) != 0) {
 		return -EIO;
