@@ -75,14 +75,12 @@ static const char cereg_5_subscribe[] = AT_CEREG_5;
 
 #if defined(CONFIG_LTE_LOCK_BANDS)
 /* Lock LTE bands 3, 4, 13 and 20 (volatile setting) */
-//static const char lock_bands[] = "AT%XBANDLOCK=2,\""CONFIG_LTE_LOCK_BAND_MASK
-static const char lock_bands[] = "AT%XBANDLOCK=2,\"00000100\"";
+static const char lock_bands[] = "AT%XBANDLOCK=2,\""CONFIG_LTE_LOCK_BAND_MASK"\"";
 #endif
 #if defined(CONFIG_LTE_LOCK_PLMN)
 /* Lock PLMN */
-//static const char lock_plmn[] = "AT+COPS=1,2,\""
-//			 CONFIG_LTE_LOCK_PLMN_STRING"\"";
-static const char lock_plmn[] = "AT+COPS=1,2,\"45400\"";
+static const char lock_plmn[] = "AT+COPS=1,2,\""
+			 CONFIG_LTE_LOCK_PLMN_STRING"\"";
 
 #endif
 /* Request eDRX to be disabled */
@@ -128,7 +126,7 @@ static struct k_sem link;
 //static const char cgdcont[] = "AT+CGDCONT="CONFIG_LTE_PDP_CONTEXT;
 //#endif
 #if defined(CONFIG_LTE_PDP_CMD)
-static const char cgdcont[] = "AT+CGDCONT=0,\"IP\",\"nbiotdirect\",,,,1";
+static const char cgdcont[] = "AT+CGDCONT=0,\"IP\",\"nbiotdirect\"";
 #endif
 #if defined(CONFIG_LTE_PDN_AUTH_CMD) && defined(CONFIG_LTE_PDN_AUTH)
 static const char cgauth[] = "AT+CGAUTH="CONFIG_LTE_PDN_AUTH;
