@@ -122,12 +122,12 @@ static const char nw_mode_fallback[] = "AT%XSYSTEMMODE=0,1,1,0";
 
 static struct k_sem link;
 
-//#if defined(CONFIG_LTE_PDP_CMD) && defined(CONFIG_LTE_PDP_CONTEXT)
-//static const char cgdcont[] = "AT+CGDCONT="CONFIG_LTE_PDP_CONTEXT;
-//#endif
-#if defined(CONFIG_LTE_PDP_CMD)
-static const char cgdcont[] = "AT+CGDCONT=0,\"IP\",\"nbiotdirect\"";
+#if defined(CONFIG_LTE_PDP_CMD) && defined(CONFIG_LTE_PDP_CONTEXT)
+static const char cgdcont[] = "AT+CGDCONT="CONFIG_LTE_PDP_CONTEXT;
 #endif
+//#if defined(CONFIG_LTE_PDP_CMD)
+//static const char cgdcont[] = "AT+CGDCONT=0,\"IP\",\"nbiotdirect\"";
+//#endif
 #if defined(CONFIG_LTE_PDN_AUTH_CMD) && defined(CONFIG_LTE_PDN_AUTH)
 static const char cgauth[] = "AT+CGAUTH="CONFIG_LTE_PDN_AUTH;
 #endif
