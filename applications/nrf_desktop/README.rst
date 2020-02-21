@@ -1,7 +1,5 @@
 .. _nrf_desktop:
 
-#This is a test
-
 nRF Desktop
 ###########
 
