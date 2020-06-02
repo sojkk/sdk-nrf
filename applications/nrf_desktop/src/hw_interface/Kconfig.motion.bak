@@ -21,11 +21,7 @@ config DESKTOP_MOTION_SENSOR_PMW3360_ENABLE
 config DESKTOP_MOTION_SENSOR_PAW3212_ENABLE
 	bool "Motion from optical sensor PAW3212"
 	select DESKTOP_MOTION_SENSOR_ENABLE
-
-
-config DESKTOP_MOTION_CIRCLE_ENABLE
-	bool "Motion from buttons"	
-
+	depends on PAW3212
 
 config DESKTOP_MOTION_BUTTONS_ENABLE
 	bool "Motion from buttons"

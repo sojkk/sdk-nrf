@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
  */
-
+ 
  /* File: motion_circle_notimer.c */
 
 #include <zephyr.h>
@@ -28,6 +28,7 @@ LOG_MODULE_REGISTER(MODULE, CONFIG_DESKTOP_MOTION_LOG_LEVEL);
 #define MOTION_SEND			29
 #define STATE_PEND_CONN		30
 #define DRAW_HANDLE			31
+
 
 enum state {
 	STATE_IDLE,
@@ -91,33 +92,26 @@ static enum dir key_to_dir(u16_t key_id)
 
 static void send_motion(void)
 {
-<<<<<<< HEAD
 	gpio_pin_set(led_port, MOTION_SEND, 1);
-=======
-	//gpio_pin_write(led_port, 29, 1);
->>>>>>> Fix motion_circle.c issue
 
 	motion_event_send((s16_t)circle_data[0], (s16_t)circle_data[1]);
 	
-<<<<<<< HEAD
 	gpio_pin_set(led_port, MOTION_SEND, 0);
-=======
-	//gpio_pin_write(led_port, 29, 0);
->>>>>>> Fix motion_circle.c issue
 }
 
 
 static int leds_init(void)
 {
-	led_port = device_get_binding(DT_ALIAS_LED0_GPIOS_CONTROLLER);
+	led_port = device_get_binding(DT_LABEL(DT_NODELABEL(gpio0)));
 		
 	if (!led_port) {
 		LOG_ERR("Could not bind to LED port %s",
-			DT_ALIAS_LED0_GPIOS_CONTROLLER);
+		DT_LABEL(DT_NODELABEL(gpio0))	);
 		return -EIO;
 	}
 	
-	int err = gpio_pin_configure(led_port, DT_ALIAS_LED2_GPIOS_PIN, GPIO_OUTPUT);
+			
+	int err = gpio_pin_configure(led_port, DT_GPIO_PIN(DT_ALIAS(led2), gpios) , GPIO_OUTPUT);
 	
 	if (err) {
 	LOG_ERR("Unable to configure Start/Stop LED, err %d", err);
@@ -126,31 +120,20 @@ static int leds_init(void)
 	}
 	
 	if(led_port != NULL) {
-		(void)gpio_pin_set(led_port, DT_ALIAS_LED2_GPIOS_PIN, LED_OFF); 
+		(void)gpio_pin_set(led_port, DT_GPIO_PIN(DT_ALIAS(led2), gpios)  , LED_OFF); 
 	}
  /**  For Testing purpose only 
-<<<<<<< HEAD
   */		
 	err = gpio_pin_configure(led_port, MOTION_SEND, GPIO_OUTPUT);
-=======
-  *			
-	err = gpio_pin_configure(led_port, 31 , GPIO_DIR_OUT);
->>>>>>> Fix motion_circle.c issue
 	if (err) {
 	LOG_ERR("Unable to config pin31, err %d", err);
 	led_port = NULL;
 	return err;
 	}
 	
-<<<<<<< HEAD
 	(void)gpio_pin_configure(led_port, STATE_PEND_CONN , GPIO_OUTPUT);
 	(void)gpio_pin_configure(led_port, DRAW_HANDLE, GPIO_OUTPUT);
  
-=======
-	(void)gpio_pin_configure(led_port, 30 , GPIO_DIR_OUT);
-	(void)gpio_pin_configure(led_port, 29 , GPIO_DIR_OUT);
- */
->>>>>>> Fix motion_circle.c issue
 	return 0;
  
  
@@ -159,55 +142,21 @@ static int leds_init(void)
 void draw_circle_handler(void)
 {
 	
-<<<<<<< HEAD
 	(void)gpio_pin_set(led_port, DRAW_HANDLE, 1);
-=======
-static const s16_t s_delta_x[] = {0, -1, -3, -6, -8, -10, -12, -13, -14, -15, -15, -15, -15, -14, -13, -11, -9, -7, -5, -3, 0, 1, 4, 6, 8, 10, 12, 13, 15, 15, 15, 15, 15, 14, 12, 11, 9, 7, 4, 2, 0, -2, -5, -7, -9, -11, -13, -14, -15, -15, -15, -15, -14, -13, -12, -10, -8, -6, -4, -1, 0, 3, 5, 7, 10, 11, 13, 14, 15, 15, 15, 15, 14, 13, 12, 10, 8, 6, 3, 1, -1, -3, -6, -8, -10, -12, -13, -14, -15, -15, -15, -15, -14, -13, -11, -9, -7, -5, -3, 0, 2, 4, 6, 9, 11, 12, 14, 15, 15, 15, 15, 15, 14, 12, 11, 9, 7, 4, 2, 0, -2, -5, -7, -9, -11, -13, -14, -15, -15, -15, -15, -14, -13, -12, -10, -8, -6, -4, -1, 0, 3, 5, 8, 10, 11, 13, 14, 15, 15, 15, 15, 14, 13, 12, 10, 8, 5, 3, 1, -1, -3, -6, -8, -10, -12, -13, -14, -15, -15, -15, -15, -14, -13, -11, -9, -7, -5, -2, 0, 2, 4, 6, 9, 11, 12, 14, 15, 15, 15, 15, 15, 14, 12, 11, 9, 7, 4, 2, 0, -2, -5, -7, -9, -11, -13, -14, -15, -15, -15, -15, -14, -13, -12, -10, -8, -6, -4, -1, 0, 3, 5, 8, 10, 11, 13, 14, 15, 15, 15, 15, 14, 13, 11, 10, 8, 5, 3, 0, -1, -4, -6, -8, -10, -12, -13, -14, -15, -15, -15, -15, -14, -13, -11, -9, -7, -5, -2, 0, 2, 4, 7, 9, 11, 12, 14, 15, 15, 15, 15, 15, 14, 12, 11, 9, 6, 4, 2, 0, -2, -5, -7, -9, -11, -13, -14, -15, -15, -15, -15, -14, -13, -12, -10, -8, -6, -3, -1, 1, 3, 5, 8, 10, 12, 13, 14, 15, 15, 15, 15, 14, 13, 11, 10, 8, 5, 3, 0, -1, -4, -6, -8, -10, -12, -13, -14, -15, -15, -15, -15,  -14, -13, -11, -9, -7, -5, -2, 0, 2, 4, 7, 9, 11, 12, 14, 15, 15, 15, 15, 15, 14, 12, 11, 9, 6, 4, 2, 0, -3, -5, -7};
-
-static const s16_t s_delta_y[] = {0, 15, 15, 14, 13, 11, 10, 8, 5, 3, 0, -1, -4, -6, -8, -10, -12, -13, -14, -15, -15, -15, -15, -14, -13, -11, -9, -7, -5, -2, 0, 2, 4, 7, 9, 11, 12, 14, 15, 15, 15, 15, 15, 14, 12, 11, 9, 6, 4, 2, 0, -2, -5, -7, -9, -11, -13, -14, -15, -15, -15, -15, -14, -13, -12, -10, -8, -6, -3, -1, 1, 3, 5, 8, 10, 12, 13, 14, 15, 15, 15, 15, 14, 13, 11, 10, 8, 5, 3, 0, -1, -4, -6, -8, -10, -12, -13, -14, -15, -15, -15, -15, -14, -13, -11, -9, -7, -5, -2, 0, 2, 4, 7, 9, 11, 12, 14, 15, 15, 15, 15, 15, 14, 12, 11, 9, 6, 4, 2, 0, -3, -5, -7, -9, -11, -13, -14, -15, -15, -15, -15, -14, -13, -12, -10, -8, -6, -3, -1, 1, 3, 6, 8, 10, 12, 13, 14, 15, 15, 15, 15, 14, 13, 11, 10, 7, 5, 3, 0, -1, -4, -6, -8, -10, -12, -13, -14, -15, -15, -15, -15, -14, -13, -11, -9, -7, -5, -2, 0, 2, 4, 7, 9, 11, 12, 14, 15, 15, 15, 15, 15, 13, 12, 10, 8, 6, 4, 1, 0, -3, -5, -7, -9, -11, -13, -14, -15, -15,  -15, -15, -14, -13, -12, -10, -8, -6, -3, -1, 1, 3, 6, 8, 10, 12, 13, 14, 15, 15, 15, 15, 14, 13, 11, 9, 7, 5, 3, 0, -1, -4, -6, -8, -10, -12, -13, -15, -15, -15, -15, -15, -14, -12, -11, -9, -7, -4, -2, 0, 2, 5, 7, 9, 11, 13, 14, 15, 15, 15, 15, 14, 13, 12, 10, 8, 6, 4, 1, 0, -3, -5, -7, -10, -11, -13, -14, -15, -15, -15, -15, -14, -13, -12, -10, -8, -6, -3, -1, 1, 3, 6, 8, 10, 12, 13, 14, 15, 15, 15, 15, 14, 13, 11, 9, 7, 5, 3, 0, -2, -4, -6, -9, -11, -12, -14, -15, -15, -15, -15, -15, -14, -12, -11, -9, -7, -4, -2, 0, 2, 5, 7, 9, 11, 13, 14, 15, 15, 15, 15, 14, 13};
-			
-static s32_t s_idx = 0; 
-  
-	//(void)gpio_pin_write(led_port,31, 1);
-  
-	x =  s_delta_x[s_idx];
-	y =  s_delta_y[s_idx];
->>>>>>> Fix motion_circle.c issue
 
 
 	circle_test_get(circle_data);
 
-<<<<<<< HEAD
-=======
-	if (s_idx >= (sizeof(s_delta_x) / sizeof(s_delta_x[0])))
-	{
-		s_idx = 0;
-	}
-	else if (s_idx < 0)
-	{
-		s_idx = (sizeof(s_delta_x) / sizeof(s_delta_x[0]));
-	}
->>>>>>> Fix motion_circle.c issue
 
-	//LOG_INF("s_idx = %i",s_idx);
-
-	is_motion_active = true;
-		
    	if (state == STATE_CONNECTED) {	
+		
 		send_motion();
 		LOG_INF("Send motion");
 		state = STATE_PENDING;
-<<<<<<< HEAD
 		gpio_pin_set(led_port, STATE_PEND_CONN , 0);
 	}
 	(void)gpio_pin_set(led_port,DRAW_HANDLE, 0);
-=======
-		//gpio_pin_write(led_port, 30, 0);
-	}
-	//void)gpio_pin_write(led_port,31, 0);
->>>>>>> Fix motion_circle.c issue
-	
-	is_motion_active = false;
+
 }
 
 
@@ -226,10 +175,11 @@ static bool handle_button_event(const struct button_event *event)
 	{
 		
 
+		is_motion_active = true;
 		draw_circle_handler();
 		/* Lit LED3 */
 		if(led_port != NULL) {
-			(void)gpio_pin_set(led_port, DT_ALIAS_LED2_GPIOS_PIN, LED_ON); 
+			(void)gpio_pin_set(led_port, DT_GPIO_PIN(DT_ALIAS(led2), gpios) , LED_ON); 
 		}
 	    LOG_INF("Button event: Start button pressed");
 	}
@@ -243,7 +193,7 @@ static bool handle_button_event(const struct button_event *event)
 		
 		/* Off LED3 */
 			if(led_port != NULL) {
-			(void)gpio_pin_set(led_port, DT_ALIAS_LED2_GPIOS_PIN, LED_OFF); 
+			(void)gpio_pin_set(led_port, DT_GPIO_PIN(DT_ALIAS(led2), gpios) , LED_OFF); 
 		}
 		LOG_INF("Button event: Stop button pressed");
 	}
@@ -274,13 +224,9 @@ static bool handle_hid_report_sent_event(const struct hid_report_sent_event *eve
 			
 				//LOG_INF("HID_REPORT_SEND EVENT: STATE CONNECTED");
 				state = STATE_CONNECTED;
-<<<<<<< HEAD
 				gpio_pin_set(led_port, STATE_PEND_CONN, 1);
 				draw_circle_handler();
 			
-=======
-				//gpio_pin_write(led_port, 30, 1);
->>>>>>> Fix motion_circle.c issue
 			}
 		
 		}
@@ -308,19 +254,11 @@ static bool handle_hid_report_subscription_event(const struct hid_report_subscri
 			if (is_motion_active) {
 				send_motion();
 				state = STATE_PENDING;
-<<<<<<< HEAD
 				gpio_pin_set(led_port, STATE_PEND_CONN, 0);
-=======
-				//gpio_pin_write(led_port, 30, 0);
->>>>>>> Fix motion_circle.c issue
 			} else {
 				//LOG_INF("SUBSCRIPTION EVENT: STATE CONNECTED");
 				state = STATE_CONNECTED;
-<<<<<<< HEAD
 				gpio_pin_set(led_port, STATE_PEND_CONN, 1);
-=======
-				//gpio_pin_write(led_port, 30, 1);
->>>>>>> Fix motion_circle.c issue
 			}
 			return false;
 		}
