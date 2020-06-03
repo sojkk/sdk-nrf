@@ -1,0 +1,6 @@
+Things done:
+prj_conf : CONFIG_BT_GATT_HIDS_MAX_CLIENT_COUNT=1
+
+Remove passkey auth 
+
+Advertising when button press without connection
