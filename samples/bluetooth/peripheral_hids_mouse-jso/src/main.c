@@ -117,6 +117,8 @@ static struct conn_mode {
 	bool in_boot_mode;
 } conn_mode[CONFIG_BT_GATT_HIDS_MAX_CLIENT_COUNT];
 
+static struct k_work adv_work;
+
 static struct k_work pairing_work;
 struct pairing_data_mitm {
 	struct bt_conn *conn;
@@ -129,7 +131,10 @@ K_MSGQ_DEFINE(mitm_queue,
 	      4);
 
 
-
+/***********************************************************************
+ * Functionds added 
+ *
+ */
 static int dk_leds_advertising(void)
 {
 
@@ -151,6 +156,11 @@ static int dk_leds_disconnected(void)
 	return err;
 	
 }
+
+/***********************************************************************/
+
+
+
 
 
 #if CONFIG_BT_DIRECTED_ADVERTISING
@@ -175,10 +185,10 @@ static void bond_find(const struct bt_bond_info *info, void *user_data)
 }
 #endif
 
-
 static void advertising_continue(void)
 {
 	struct bt_le_adv_param adv_param;
+	
 	int err;
 
 #if CONFIG_BT_DIRECTED_ADVERTISING
@@ -186,7 +196,6 @@ static void advertising_continue(void)
 
 	if (!k_msgq_get(&bonds_queue, &addr, K_NO_WAIT)) {
 		char addr_buf[BT_ADDR_LE_STR_LEN];
-		struct bt_conn *conn;
 
 		adv_param = *BT_LE_ADV_CONN_DIR(&addr);
 		adv_param.options |= BT_LE_ADV_OPT_DIR_ADDR_RPA;
@@ -197,13 +206,19 @@ static void advertising_continue(void)
 			printk("Directed advertising failed to start\n");
 			return;
 		}
+		else	{
+		
+			printk("Directed advertising started\n");	//Added
+		
+		}	
 
 		bt_addr_le_to_str(&addr, addr_buf, BT_ADDR_LE_STR_LEN);
 		printk("Direct advertising to %s started\n", addr_buf);
-
 	} else
 #endif
 	{
+		
+
 		adv_param = *BT_LE_ADV_CONN;
 		adv_param.options |= BT_LE_ADV_OPT_ONE_TIME;
 		err = bt_le_adv_start(&adv_param, ad, ARRAY_SIZE(ad),
@@ -212,35 +227,30 @@ static void advertising_continue(void)
 			printk("Advertising failed to start (err %d)\n", err);
 			return;
 		}
-		
+
 		printk("Regular advertising started\n");
 	}
 	
-	err = dk_leds_advertising();
+	err = dk_leds_advertising();		/* Added */
 	if(err)	{
 		printk("Advertising LED cannot started\n");
 	}
 }
 
-
 static void advertising_start(void)
 {
-	int err;
-
-	/* Clear the application start for advertising restart. */
-	err = bt_le_adv_stop();
-	if (err) {
-		printk("Failed to stop advertising (err %d)\n", err);
-	}
-
 #if CONFIG_BT_DIRECTED_ADVERTISING
 	k_msgq_purge(&bonds_queue);
 	bt_foreach_bond(BT_ID_DEFAULT, bond_find, NULL);
 #endif
 
-	advertising_continue();
+	k_work_submit(&adv_work);
 }
 
+static void advertising_process(struct k_work *work)
+{
+	advertising_continue();
+}
 
 static void pairing_process(struct k_work *work)
 {
@@ -298,7 +308,7 @@ static void connected(struct bt_conn *conn, u8_t err)
 	if (err) {
 		if (err == BT_HCI_ERR_ADV_TIMEOUT) {
 			printk("Direct advertising to %s timed out\n", addr);
-			advertising_continue();
+			k_work_submit(&adv_work);
 		} else {
 			printk("Failed to connect to %s (%u)\n", addr, err);
 		}
@@ -307,7 +317,7 @@ static void connected(struct bt_conn *conn, u8_t err)
 
 	printk("Connected %s\n", addr);
 	
-	err = dk_leds_connected();
+	err = dk_leds_connected();	//Added
 	if(err)
 		printk("Connected LED cannot set (err %d)\n",err);
 	
@@ -330,15 +340,11 @@ static void connected(struct bt_conn *conn, u8_t err)
 		return;
 	}
 
-
 	insert_conn_object(conn);
-	
-
 
 	if (is_conn_slot_free()) {
 		advertising_start();
 	}
-	
 }
 
 
@@ -352,7 +358,8 @@ static void disconnected(struct bt_conn *conn, u8_t reason)
 
 	printk("Disconnected from %s (reason %u)\n", addr, reason);
 	
-	(void)dk_leds_disconnected();
+		
+	(void)dk_leds_disconnected();	//Added
 
 	err = bt_gatt_hids_notify_disconnected(&hids_obj, conn);
 
@@ -367,7 +374,7 @@ static void disconnected(struct bt_conn *conn, u8_t reason)
 		}
 	}
 
-	//advertising_start();
+	//advertising_start();	//Removed
 }
 
 
@@ -553,12 +560,12 @@ static void hid_init(void)
 
 static void mouse_movement_send(s16_t x_delta, s16_t y_delta)
 {
-	bool need_adv = true;
+	bool need_adv = true;	//Added
 	
 	for (size_t i = 0; i < CONFIG_BT_GATT_HIDS_MAX_CLIENT_COUNT; i++) {
 
-		need_adv &= (!conn_mode[i].conn); 
-		
+			need_adv &= (!conn_mode[i].conn); 	//Added
+
 		if (!conn_mode[i].conn) {
 			continue;
 		}
@@ -586,7 +593,7 @@ static void mouse_movement_send(s16_t x_delta, s16_t y_delta)
 			sys_put_le16(y, y_buff);
 
 			/* Encode report. */
-			BUILD_ASSERT_MSG(sizeof(buffer) == 3,
+			BUILD_ASSERT(sizeof(buffer) == 3,
 					 "Only 2 axis, 12-bit each, are supported");
 
 			buffer[0] = x_buff[0];
@@ -600,9 +607,8 @@ static void mouse_movement_send(s16_t x_delta, s16_t y_delta)
 		}
 	}
 	
-	if (need_adv)
+	if (need_adv)					//Added
 		advertising_start();
-	
 	
 }
 
@@ -616,9 +622,8 @@ static void mouse_handler(struct k_work *work)
 	}
 }
 
-/*
+/*    
 #if defined(CONFIG_BT_GATT_HIDS_SECURITY_ENABLED)
-
 static void auth_passkey_display(struct bt_conn *conn, unsigned int passkey)
 {
 	char addr[BT_ADDR_LE_STR_LEN];
@@ -759,7 +764,6 @@ void button_changed(u32_t button_state, u32_t has_changed)
 		}
 	}
 
-
 	if (buttons & KEY_LEFT_MASK) {
 		pos.x_val -= MOVEMENT_SPEED;
 		printk("%s(): left\n", __func__);
@@ -790,7 +794,7 @@ void button_changed(u32_t button_state, u32_t has_changed)
 			return;
 		}
 		if (k_msgq_num_used_get(&hids_queue) == 1) {
-			k_delayed_work_submit(&hids_work, 0);
+			k_delayed_work_submit(&hids_work, K_NO_WAIT);
 		}
 	}
 }
@@ -827,8 +831,8 @@ void main(void)
 
 	printk("Starting Bluetooth Peripheral HIDS mouse example\n");
 	
+	err= dk_leds_init();		//Added
 	
-	err= dk_leds_init();
 	if(err)
 	{
 		printk("DK LEDs cannot initialized, (err %d)\n", err);
@@ -853,6 +857,7 @@ void main(void)
 
 	k_delayed_work_init(&hids_work, mouse_handler);
 	k_work_init(&pairing_work, pairing_process);
+	k_work_init(&adv_work, advertising_process);
 
 	if (IS_ENABLED(CONFIG_SETTINGS)) {
 		settings_load();
@@ -863,7 +868,7 @@ void main(void)
 	configure_buttons();
 
 	while (1) {
-		k_sleep(k_SECONDS(1));
+		k_sleep(K_SECONDS(1));
 		/* Battery level simulation */
 		bas_notify();
 	}
