@@ -622,7 +622,7 @@ static void mouse_handler(struct k_work *work)
 	}
 }
 
-/*    
+/* 
 #if defined(CONFIG_BT_GATT_HIDS_SECURITY_ENABLED)
 static void auth_passkey_display(struct bt_conn *conn, unsigned int passkey)
 {
