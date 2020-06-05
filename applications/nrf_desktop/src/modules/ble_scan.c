@@ -207,7 +207,7 @@ static int configure_name_filters(uint8_t *filter_mode)
 		[PEER_TYPE_KEYBOARD] = CONFIG_DESKTOP_BLE_SCAN_KEYBOARD_LIMIT,
 	};
 	int err = 0;
-
+#ifndef CONFIG_DESKTOP_BLE_PEER_NOT_FILTER
 	for (size_t i = 0; i < ARRAY_SIZE(subscribed_peers); i++) {
 		enum peer_type type = subscribed_peers[i].peer_type;
 
@@ -217,7 +217,7 @@ static int configure_name_filters(uint8_t *filter_mode)
 		__ASSERT_NO_MSG(peer_cnt[type] < peer_limit[type]);
 		peer_cnt[type]++;
 	}
-
+#endif
 	/* Bluetooth scan filters are defined in separate header. */
 	for (size_t i = 0; i < ARRAY_SIZE(peer_name); i++) {
 		if ((peer_cnt[i] == peer_limit[i]) ||

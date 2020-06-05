@@ -350,7 +350,7 @@ static void bt_ready(int err)
 	}
 
 	LOG_INF("Bluetooth initialized");
-
+#ifndef CONFIG_DESKTOP_BLE_NO_LLPM
 #ifdef CONFIG_DESKTOP_BLE_USE_LLPM
 	sdc_hci_cmd_vs_llpm_mode_set_t *p_cmd_enable;
 
@@ -367,6 +367,7 @@ static void bt_ready(int err)
 		LOG_INF("LLPM enabled");
 	}
 #endif /* CONFIG_DESKTOP_BLE_USE_LLPM */
+#endif /* CONFIG_DESKTOP_BLE_NO_LLPM */
 
 	module_set_state(MODULE_STATE_READY);
 }
