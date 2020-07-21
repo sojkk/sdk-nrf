@@ -57,8 +57,7 @@ static int set_conn_params(struct bt_conn *conn, uint16_t conn_latency,
 {
 	int err;
 
-#ifndef CONFIG_DESKTOP_BLE_NO_LLPM
-#ifdef CONFIG_BT_LL_NRFXLIB
+#ifdef CONFIG_DESKTOP_BLE_USE_LLPM
 	if (peer_llpm_support) {
 		struct net_buf *buf;
 		sdc_hci_cmd_vs_conn_update_t *cmd_conn_update;
@@ -86,8 +85,7 @@ static int set_conn_params(struct bt_conn *conn, uint16_t conn_latency,
 		err = bt_hci_cmd_send_sync(SDC_HCI_OPCODE_CMD_VS_CONN_UPDATE, buf,
 					   NULL);
 	} else
-#endif /* CONFIG_BT_LL_NRFXLIB */
-#endif /* CONFIG_DESKTOP_BLE_NO_LLPM */
+#endif /* CONFIG_DESKTOP_BLE_USE_LLPM */
 	{
 		struct bt_le_conn_param param = {
 			.interval_min = CONN_INTERVAL_BLE_REG,
@@ -229,15 +227,12 @@ static void peer_discovered(struct bt_conn *conn, bool peer_llpm_support)
 	struct connected_peer *peer = find_connected_peer(conn);
 
 	if (peer) {
-#ifdef CONFIG_DESKTOP_BLE_NO_LLPM
-		peer->llpm_support = false;
-#else		
+#ifdef CONFIG_DESKTOP_BLE_USE_LLPM
 		peer->llpm_support = peer_llpm_support;
+#else		
+		peer->llpm_support = false; 
 #endif
-		/* Make sure that initial connection latency after discovery
-		 * is set to zero.
-		 */
-		peer->requested_latency = 0;
+		peer->discovered = true;
 		update_peer_conn_params(peer);
 	}
 }
