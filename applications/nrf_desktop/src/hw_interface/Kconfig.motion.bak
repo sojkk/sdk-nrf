@@ -37,7 +37,7 @@ endchoice
 
 config DESKTOP_MOTION_SENSOR_ENABLE
 	bool
-
+	
 config DESKTOP_MOTION_START_ID
 	int "Start key ID"
 	depends on DESKTOP_MOTION_CIRCLE_ENABLE
