@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2018 Nordic Semiconductor ASA
  *
@@ -24,6 +25,7 @@
 #include "hid_event.h"
 #include "ble_event.h"
 #include "usb_event.h"
+#include "voice_event.h"
 
 #include "hid_keymap.h"
 #include "hid_keymap_def.h"
@@ -49,12 +51,14 @@ enum state {
 #define INPUT_REPORT_DATA_COUNT (IS_ENABLED(CONFIG_DESKTOP_HID_REPORT_MOUSE_SUPPORT) +		\
 				 IS_ENABLED(CONFIG_DESKTOP_HID_REPORT_KEYBOARD_SUPPORT) +	\
 				 IS_ENABLED(CONFIG_DESKTOP_HID_REPORT_SYSTEM_CTRL_SUPPORT) +	\
-				 IS_ENABLED(CONFIG_DESKTOP_HID_REPORT_CONSUMER_CTRL_SUPPORT))
+				 IS_ENABLED(CONFIG_DESKTOP_HID_REPORT_CONSUMER_CTRL_SUPPORT)+   \
+                                 IS_ENABLED(CONFIG_DESKTOP_HID_REPORT_VOICE_SUPPORT))
 
 #define INPUT_REPORT_STATE_COUNT (IS_ENABLED(CONFIG_DESKTOP_HID_REPORT_MOUSE_SUPPORT) +		\
 				  IS_ENABLED(CONFIG_DESKTOP_HID_REPORT_KEYBOARD_SUPPORT) +	\
 				  IS_ENABLED(CONFIG_DESKTOP_HID_REPORT_SYSTEM_CTRL_SUPPORT) +	\
 				  IS_ENABLED(CONFIG_DESKTOP_HID_REPORT_CONSUMER_CTRL_SUPPORT) +	\
+                                  IS_ENABLED(CONFIG_DESKTOP_HID_REPORT_VOICE_SUPPORT)+          \
 				  IS_ENABLED(CONFIG_DESKTOP_HID_BOOT_INTERFACE_MOUSE) +		\
 				  IS_ENABLED(CONFIG_DESKTOP_HID_BOOT_INTERFACE_KEYBOARD))
 
@@ -64,7 +68,8 @@ enum state {
 			   CONSUMER_CTRL_REPORT_KEY_COUNT_MAX))
 
 #define AXIS_COUNT (IS_ENABLED(CONFIG_DESKTOP_HID_REPORT_MOUSE_SUPPORT) * MOUSE_REPORT_AXIS_COUNT)
-
+//voice command
+#define VOICE_COUNT (IS_ENABLED(CONFIG_DESKTOP_HID_REPORT_VOICE_SUPPORT) * REPORT_SIZE_VOICE)
 
 /**@brief HID state item. */
 struct item {
@@ -98,10 +103,13 @@ struct axis_data {
 	u8_t axis_count; /**< Number of axes in this array. */
 };
 
+
+
 struct report_data {
 	struct items items;
 	struct eventq eventq;
 	struct axis_data axes;
+        u8_t voice[VOICE_COUNT]; /**< Array of voice data. */
 	bool update_needed;
 	struct report_state *linked_rs;
 };
@@ -706,6 +714,21 @@ static void send_report_keyboard(u8_t report_id, struct report_data *rd)
 	rd->update_needed = false;
 }
 
+
+
+//voice command
+static void send_report_voice(u8_t report_id, struct report_data *rd)
+{
+    struct hid_report_event *event = new_hid_report_event(REPORT_SIZE_VOICE + 1);
+    
+    event->dyndata.data[0] = report_id;
+    memcpy( event->dyndata.data + 1 , rd->voice, VOICE_COUNT);
+
+    EVENT_SUBMIT(event);
+
+}
+
+
 static void send_report_mouse(u8_t report_id, struct report_data *rd)
 {
 	__ASSERT_NO_MSG(report_id == REPORT_ID_MOUSE);
@@ -946,6 +969,10 @@ static void report_send(struct report_data *rd, bool check_state, bool send_alwa
 				send_report_boot_mouse(rs->report_id, rd);
 				break;
 
+                        case REPORT_ID_VOICE://voice command
+                                send_report_voice(rs->report_id, rd);
+                                break;
+                        
 			default:
 				/* Unhandled HID report type. */
 				__ASSERT_NO_MSG(false);
@@ -1230,11 +1257,24 @@ static void init(void)
 		report_data_index[REPORT_ID_CONSUMER_CTRL] = data_id;
 		report_state_index[REPORT_ID_CONSUMER_CTRL] = state_id;
 
-		state.report_data[data_id].items.item_count_max = CONSUMER_CTRL_REPORT_KEY_COUNT_MAX;
+		state.report_data[data_id].items.item_count_max = CONSUMER_CTRL_REPORT_KEY_COUNT_MAX;              
 
 		data_id++;
 		state_id++;
 	}
+
+        // Voice command
+        if (IS_ENABLED(CONFIG_DESKTOP_HID_REPORT_VOICE_SUPPORT)) {
+              report_data_index[REPORT_ID_VOICE] = data_id;
+              report_state_index[REPORT_ID_VOICE] = state_id;
+
+              state.report_data[data_id].items.item_count_max = VOICE_REPORT_COUNT_MAX ;
+
+              data_id++;
+              state_id++;
+        }
+
+
 	if (IS_ENABLED(CONFIG_DESKTOP_HID_BOOT_INTERFACE_MOUSE)) {
 		report_state_index[REPORT_ID_BOOT_MOUSE] = state_id;
 
@@ -1245,6 +1285,8 @@ static void init(void)
 
 		state_id++;
 	}
+
+     
 
 	__ASSERT_NO_MSG(data_id == INPUT_REPORT_DATA_COUNT);
 	__ASSERT_NO_MSG(state_id == INPUT_REPORT_STATE_COUNT);
@@ -1296,6 +1338,25 @@ static bool handle_button_event(const struct button_event *event)
 
 	return false;
 }
+
+//voice command
+static bool handle_voice_event( struct voice_event *event)
+{
+    if (!IS_ENABLED(CONFIG_DESKTOP_HID_REPORT_VOICE_SUPPORT)) {
+		return false;
+    }
+
+    struct report_data *rd = get_report_data(REPORT_ID_VOICE);
+
+    memcpy(rd->voice, event->data, VOICE_COUNT);
+
+    report_send(rd, true, true);
+
+   
+    return false;
+    
+}
+
 
 static bool handle_hid_report_sent_event(
 		const struct hid_report_sent_event *event)
@@ -1400,6 +1461,12 @@ static bool event_handler(const struct event_header *eh)
 		return handle_button_event(cast_button_event(eh));
 	}
 
+        //voice commad
+        if (IS_ENABLED(CONFIG_DESKTOP_VOICE_DUMMY_ENABLE) &&
+            is_voice_event(eh)) {
+               return handle_voice_event(cast_voice_event(eh));
+        }
+
 	if (is_hid_report_subscription_event(eh)) {
 		return handle_hid_report_subscription_event(
 				cast_hid_report_subscription_event(eh));
@@ -1433,3 +1500,4 @@ EVENT_SUBSCRIBE(MODULE, module_state_event);
 EVENT_SUBSCRIBE_FINAL(MODULE, button_event);
 EVENT_SUBSCRIBE(MODULE, motion_event);
 EVENT_SUBSCRIBE(MODULE, wheel_event);
+EVENT_SUBSCRIBE(MODULE, voice_event);     //voice event
