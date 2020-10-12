@@ -1,0 +1,29 @@
+#
+# Copyright (c) 2019 Nordic Semiconductor
+#
+# SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
+#
+
+menu "Voice configuration"
+
+config DESKTOP_VOICE_DUMMY_ENABLE
+	bool "Dummy voice"
+
+
+config DESKTOP_VOICE_START_ID
+	int "Start key ID"
+	depends on DESKTOP_VOICE_DUMMY_ENABLE
+	default 0
+	help
+	  ID of key use for generating start motion.
+
+
+config DESKTOP_VOICE_STOP_ID
+	int "Stop key ID"
+	depends on DESKTOP_VOICE_DUMMY_ENABLE
+	default 0
+	help
+	  ID of key use for generating stop motion.
+
+
+endmenu

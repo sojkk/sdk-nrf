@@ -6,6 +6,9 @@
 
 target_sources(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/board.c)
 
+target_sources_ifdef(CONFIG_DESKTOP_VOICE_DUMMY_ENABLE app PRIVATE
+		     ${CMAKE_CURRENT_SOURCE_DIR}/voice_dummy.c)
+
 target_sources_ifdef(CONFIG_DESKTOP_MOTION_SENSOR_ENABLE app PRIVATE
                      ${CMAKE_CURRENT_SOURCE_DIR}/motion_sensor.c)
 
