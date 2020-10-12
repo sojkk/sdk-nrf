@@ -34,6 +34,23 @@ config DESKTOP_HID_DONGLE
 	select DESKTOP_HID_REPORT_CONSUMER_CTRL_SUPPORT
 	help
 	  Enable reports needed by a dongle.
+	  
+config DESKTOP_HID_MOUSE_WITH_VOICE
+	bool "Device is a HID mouse with voice command"
+	select DESKTOP_HID_REPORT_MOUSE_SUPPORT
+	select DESKTOP_HID_REPORT_VOICE_SUPPORT
+	help
+	  Enable reports needed by a mouse with voice command.
+	  
+config DESKTOP_HID_DONGLE_WITH_VOICE
+	bool "Device is a HID keyboard"
+	select DESKTOP_HID_REPORT_MOUSE_SUPPORT
+	select DESKTOP_HID_REPORT_KEYBOARD_SUPPORT
+	select DESKTOP_HID_REPORT_SYSTEM_CTRL_SUPPORT
+	select DESKTOP_HID_REPORT_CONSUMER_CTRL_SUPPORT
+	select DESKTOP_HID_REPORT_VOICE_SUPPORT
+	help
+	  Enable reports needed by a dongle with voice command. 
 
 menu "HID Reports"
 
@@ -63,6 +80,13 @@ config DESKTOP_HID_REPORT_CONSUMER_CTRL_SUPPORT
 	help
 	  This option controls if the device supports HID consumer control
 	  report.
+	  Report is added to the report map. It does not need to be generated
+	  by the device.
+	  
+config DESKTOP_HID_REPORT_VOICE_SUPPORT
+	bool "vOICE report support"
+	help
+	  This option controls if the device supports HID voice report.
 	  Report is added to the report map. It does not need to be generated
 	  by the device.
 

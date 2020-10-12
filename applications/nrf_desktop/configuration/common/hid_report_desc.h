@@ -17,6 +17,7 @@
 #include "hid_report_system_ctrl.h"
 #include "hid_report_consumer_ctrl.h"
 #include "hid_report_user_config.h"
+#include "hid_report_voice.h"
 
 
 #ifdef __cplusplus
@@ -30,6 +31,7 @@ enum report_id {
 	REPORT_ID_KEYBOARD_KEYS,
 	REPORT_ID_SYSTEM_CTRL,
 	REPORT_ID_CONSUMER_CTRL,
+	REPORT_ID_VOICE,	//voice support
 
 	REPORT_ID_KEYBOARD_LEDS,
 

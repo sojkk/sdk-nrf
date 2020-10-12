@@ -47,6 +47,14 @@ const u8_t hid_report_desc[] = {
 	REPORT_MAP_CONSUMER_CTRL(REPORT_ID_CONSUMER_CTRL),
 	0xC0,           /* End Collection (Application) */
 #endif
+
+	
+#if CONFIG_DESKTOP_HID_REPORT_VOICE_SUPPORT
+	REPORT_MAP_VOICE(REPORT_ID_VOICE),
+	0xC0,           /* End Collection (Application) */
+#endif 
+
+
 };
 
 const size_t hid_report_desc_size = sizeof(hid_report_desc);
