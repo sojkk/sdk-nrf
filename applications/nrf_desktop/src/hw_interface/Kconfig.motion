@@ -23,6 +23,9 @@ config DESKTOP_MOTION_SENSOR_PAW3212_ENABLE
 	select DESKTOP_MOTION_SENSOR_ENABLE
 	depends on PAW3212
 
+config DESKTOP_MOTION_CIRCLE_ENABLE
+	bool "Motion from buttons"
+
 config DESKTOP_MOTION_BUTTONS_ENABLE
 	bool "Motion from buttons"
 	depends on !DESKTOP_BUTTONS_NONE
@@ -34,6 +37,21 @@ endchoice
 
 config DESKTOP_MOTION_SENSOR_ENABLE
 	bool
+
+config DESKTOP_MOTION_START_ID
+	int "Start key ID"
+	depends on DESKTOP_MOTION_CIRCLE_ENABLE
+	default 0
+	help
+	  ID of key use for generating start motion.
+
+
+config DESKTOP_MOTION_STOP_ID
+	int "Stop key ID"
+	depends on DESKTOP_MOTION_CIRCLE_ENABLE
+	default 0
+	help
+	  ID of key use for generating stop motion.
 
 config DESKTOP_MOTION_SENSOR_TYPE
 	depends on DESKTOP_MOTION_SENSOR_ENABLE
