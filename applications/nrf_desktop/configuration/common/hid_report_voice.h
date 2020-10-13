@@ -16,12 +16,10 @@ extern "C" {
 
 
 #define REPORT_MAP_VOICE(report_id)					\
-									\
 	0x85, report_id,						\
-	0x06, 0x00, 0xff, /* Usage Page (Vendor Defined 0xFF00) */	\
-	0x0A, 0x01, 0xff, /* Usage (0xFF01) */				\
+	0x0A, 0x03, 0xff, /* Usage (0xFF03) */				\
+	0x25, 0xff,	  /* Logical Maximum (255) */			\
 	0x15, 0x00,       /* Logical Minimum (0) */			\
-	0x25, 0xFF,       /* Logical Maximum (255) */			\
 	0x75, 0x08,       /* Report Size (8) */				\
 	0x95, REPORT_SIZE_VOICE,       /* Report Count */		\
 	0x81, 0x02        /* Input (Data, Variable, Absolute) */	\

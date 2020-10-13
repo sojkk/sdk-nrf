@@ -110,7 +110,7 @@ config DESKTOP_INIT_LOG_HID_NOTIFICATION_EVENT
 	bool "HID notification event"
 	default y
 
-config CONFIG_DESKTOP_INIT_LOG_VOICE_EVENT
+config DESKTOP_INIT_LOG_VOICE_EVENT
 	bool "Voice event"
 	default y
 

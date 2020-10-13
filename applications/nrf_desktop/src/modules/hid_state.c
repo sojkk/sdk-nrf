@@ -721,6 +721,7 @@ static void send_report_voice(u8_t report_id, struct report_data *rd)
 {
     struct hid_report_event *event = new_hid_report_event(REPORT_SIZE_VOICE + 1);
     
+    event->subscriber = state.selected->id;
     event->dyndata.data[0] = report_id;
     memcpy( event->dyndata.data + 1 , rd->voice, VOICE_COUNT);
 

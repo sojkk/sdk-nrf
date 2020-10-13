@@ -47,6 +47,9 @@ BT_GATT_HIDS_DEF(hids_obj,
 #if CONFIG_DESKTOP_HID_REPORT_CONSUMER_CTRL_SUPPORT
 		 REPORT_SIZE_CONSUMER_CTRL,
 #endif
+#if CONFIG_DESKTOP_HID_REPORT_VOICE_SUPPORT
+		 REPORT_SIZE_VOICE,
+#endif
 #if CONFIG_DESKTOP_CONFIG_CHANNEL_ENABLE
 		 REPORT_SIZE_USER_CONFIG,
 #endif
@@ -220,6 +223,17 @@ static void consumer_ctrl_notif_handler(enum bt_gatt_hids_notif_evt evt)
 	async_notif_handler(REPORT_ID_CONSUMER_CTRL, evt);
 }
 
+static void voice_report_sent_cb(struct bt_conn *conn, void *user_data)
+{
+	ARG_UNUSED(user_data);
+	hid_report_sent(conn, REPORT_ID_VOICE, false);
+}
+
+static void voice_notif_handler(enum bt_gatt_hids_notif_evt evt)
+{
+	async_notif_handler(REPORT_ID_VOICE, evt);
+}
+
 static void keyboard_leds_handler(struct bt_gatt_hids_rep *rep,
 				  struct bt_conn *conn,
 				  bool write)
@@ -338,6 +352,22 @@ static int module_init(void)
 		ir_pos++;
 	}
 
+	if (IS_ENABLED(CONFIG_DESKTOP_HID_REPORT_VOICE_SUPPORT)) {
+		static const u8_t mask[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+					    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+					    };
+		BUILD_ASSERT(sizeof(mask) == REPORT_SIZE_VOICE);
+		BUILD_ASSERT(REPORT_ID_VOICE < ARRAY_SIZE(report_index));
+
+		input_report[ir_pos].id       = REPORT_ID_VOICE;
+		input_report[ir_pos].size     = REPORT_SIZE_VOICE;
+		input_report[ir_pos].handler  = voice_notif_handler;
+		input_report[ir_pos].rep_mask = (sizeof(mask) == 0)?(NULL):(mask);
+
+		report_index[input_report[ir_pos].id] = ir_pos;
+		ir_pos++;
+	}
+
 	hids_init_param.inp_rep_group_init.cnt = ir_pos;
 
 	if (IS_ENABLED(CONFIG_DESKTOP_CONFIG_CHANNEL_ENABLE)) {
@@ -391,6 +421,7 @@ static void send_hid_report(const struct hid_report_event *event)
 		[REPORT_ID_KEYBOARD_KEYS] = keyboard_keys_report_sent_cb,
 		[REPORT_ID_SYSTEM_CTRL]   = system_ctrl_report_sent_cb,
 		[REPORT_ID_CONSUMER_CTRL] = consumer_ctrl_report_sent_cb,
+		[REPORT_ID_VOICE] = voice_report_sent_cb,
 		[REPORT_ID_BOOT_MOUSE] = boot_mouse_report_sent_cb,
 		[REPORT_ID_BOOT_KEYBOARD] = boot_keyboard_report_sent_cb,
 	};

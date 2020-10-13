@@ -18,6 +18,9 @@ const u8_t hid_report_desc[] = {
 #if CONFIG_DESKTOP_CONFIG_CHANNEL_ENABLE
 	REPORT_MAP_USER_CONFIG(REPORT_ID_USER_CONFIG),
 #endif
+#if CONFIG_DESKTOP_HID_REPORT_VOICE_SUPPORT
+	REPORT_MAP_VOICE(REPORT_ID_VOICE),
+#endif
 	0xC0,           /* End Collection (Application) */
 #endif
 
@@ -28,6 +31,9 @@ const u8_t hid_report_desc[] = {
 	REPORT_MAP_KEYBOARD(REPORT_ID_KEYBOARD_KEYS, REPORT_ID_KEYBOARD_LEDS),
 #if CONFIG_DESKTOP_CONFIG_CHANNEL_ENABLE && !CONFIG_DESKTOP_HID_REPORT_MOUSE_SUPPORT
 	REPORT_MAP_USER_CONFIG(REPORT_ID_USER_CONFIG),
+#endif
+#if CONFIG_DESKTOP_HID_REPORT_VOICE_SUPPORT && !CONFIG_DESKTOP_HID_REPORT_MOUSE_SUPPORT
+	REPORT_MAP_VOICE(REPORT_ID_VOICE),
 #endif
 	0xC0,           /* End Collection (Application) */
 #endif
@@ -47,14 +53,6 @@ const u8_t hid_report_desc[] = {
 	REPORT_MAP_CONSUMER_CTRL(REPORT_ID_CONSUMER_CTRL),
 	0xC0,           /* End Collection (Application) */
 #endif
-
-	
-#if CONFIG_DESKTOP_HID_REPORT_VOICE_SUPPORT
-	REPORT_MAP_VOICE(REPORT_ID_VOICE),
-	0xC0,           /* End Collection (Application) */
-#endif 
-
-
 };
 
 const size_t hid_report_desc_size = sizeof(hid_report_desc);

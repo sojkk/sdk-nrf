@@ -78,6 +78,9 @@ static void forward_hid_report(u8_t report_id, const u8_t *data, size_t size)
 	struct hid_report_event *event = new_hid_report_event(size + sizeof(report_id));
 
 	k_spinlock_key_t key = k_spin_lock(&lock);
+	if (report_id == REPORT_ID_VOICE) {
+		LOG_WRN("Got voice data");
+	}
 
 	if (!usb_ready) {
 		k_spin_unlock(&lock, key);

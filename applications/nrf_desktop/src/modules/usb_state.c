@@ -268,6 +268,17 @@ static void broadcast_subscription_change(void)
 
 		EVENT_SUBMIT(event);
 	}
+	if (IS_ENABLED(CONFIG_DESKTOP_HID_REPORT_VOICE_SUPPORT)) {
+		struct hid_report_subscription_event *event =
+			new_hid_report_subscription_event();
+
+		event->report_id  = REPORT_ID_VOICE;
+		event->enabled    = (state == USB_STATE_ACTIVE) &&
+				    (hid_protocol == HID_PROTOCOL_REPORT);
+		event->subscriber = &state;
+
+		EVENT_SUBMIT(event);
+	}
 	if (IS_ENABLED(CONFIG_DESKTOP_HID_BOOT_INTERFACE_MOUSE)) {
 		struct hid_report_subscription_event *event =
 			new_hid_report_subscription_event();

@@ -56,9 +56,6 @@ static u8_t voice_data[] =
 static enum state state;
 
 
-static bool is_voice_active = false;
-
-
 
 
 static void voice_event_send(void)
@@ -140,17 +137,12 @@ void voice_timer_handler(struct k_timer *dummy)
 
 	//LOG_INF("s_idx = %i",s_idx);
 
-	is_voice_active = true;
-
    	if (state == STATE_CONNECTED) {	
-		
 		voice_event_send();
 		state = STATE_PENDING;
 		//gpio_pin_set(led_port, 30, 0);
 	}
 	//void)gpio_pin_set(led_port,31, 0);
-	
-	is_voice_active = false;
 }
 
 K_TIMER_DEFINE(voice_timer, voice_timer_handler, NULL);
@@ -183,7 +175,6 @@ static bool handle_button_event(const struct button_event *event)
 	{
 		/* Stop app timer */
 		k_timer_stop(&voice_timer);
-		is_voice_active = false;
 		/* Off LED3 */
 			if(led_port != NULL) {
 			(void)gpio_pin_set(led_port, DT_GPIO_PIN(DT_ALIAS(led3), gpios), LED_OFF); 
@@ -211,12 +202,7 @@ static bool handle_hid_report_sent_event(const struct hid_report_sent_event *eve
 {
 	if (event->report_id == REPORT_ID_VOICE) {
 		if (state == STATE_PENDING) {
-			if (is_voice_active) {
-				voice_event_send();
-			} else {
-				state = STATE_CONNECTED;
-				//gpio_pin_set(led_port, 30, 1);
-			}
+			state = STATE_CONNECTED;
 		}
 	}
 
@@ -239,14 +225,7 @@ static bool handle_hid_report_subscription_event(const struct hid_report_subscri
 		bool is_connected = (peer_count != 0);
 
 		if ((state == STATE_IDLE) && is_connected) {
-			if (is_voice_active) {
-				voice_event_send();
-				state = STATE_PENDING;
-				//gpio_pin_set(led_port, 30, 0);
-			} else {
-				state = STATE_CONNECTED;
-				//gpio_pin_set(led_port, 30, 1);
-			}
+			state = STATE_CONNECTED;
 			return false;
 		}
 	
@@ -261,8 +240,6 @@ static bool handle_hid_report_subscription_event(const struct hid_report_subscri
 
 static bool event_handler(const struct event_header *eh)
 {
-	
-	
 	if (is_hid_report_sent_event(eh)) {
 		return handle_hid_report_sent_event(
 				cast_hid_report_sent_event(eh));
