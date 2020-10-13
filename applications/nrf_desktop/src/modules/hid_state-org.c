@@ -117,8 +117,6 @@ struct report_state {
 struct subscriber {
 	const void *id;
 	bool is_usb;
-        u8_t report_max;   //JS Modify: fix multiple input report issue
-        u8_t report_cnt;   //JS Modify: fix multiple input report issue
 	struct report_state state[INPUT_REPORT_STATE_COUNT];
 };
 
@@ -135,7 +133,7 @@ static u8_t report_state_index[REPORT_ID_COUNT];
 static struct hid_state state;
 
 
-static bool report_send(struct report_data *rd, bool check_state, bool send_always); //JS Modify: fix multiple input report issue
+static void report_send(struct report_data *rd, bool check_state, bool send_always);
 
 
 /**@brief Binary search. Input array must be already sorted.
@@ -473,14 +471,12 @@ static struct subscriber *get_subscriber_by_type(bool is_usb)
 	return NULL;
 }
 
-static void connect_subscriber(const void *subscriber_id, bool is_usb, u8_t report_max) //JS Modify: fix multiple input report issue
+static void connect_subscriber(const void *subscriber_id, bool is_usb)
 {
 	for (size_t i = 0; i < ARRAY_SIZE(state.subscriber); i++) {
 		if (!state.subscriber[i].id) {
 			state.subscriber[i].id = subscriber_id;
 			state.subscriber[i].is_usb = is_usb;
-			state.subscriber[i].report_max = report_max;	//JS Modify: fix multiple input report issue
-			state.subscriber[i].report_cnt = 0;				//JS Modify: fix multiple input report issue
 			LOG_INF("Subscriber %p connected", subscriber_id);
 
 			if (state.selected && is_usb) {
@@ -903,13 +899,11 @@ static bool update_report(struct report_data *rd)
 	return update_needed;
 }
 
-static bool report_send(struct report_data *rd, bool check_state, bool send_always) //JS Modify: fix multiple input report issue
+static void report_send(struct report_data *rd, bool check_state, bool send_always)
 {
-	bool report_sent = false;	 //JS Modify: fix multiple input report issue  
-	
 	if (!rd->linked_rs) {
 		LOG_WRN("No linked report sink");
-		return report_sent;  //JS Modify: fix multiple input report issue
+		return;
 	}
 
 	struct report_state *rs = rd->linked_rs;
@@ -928,7 +922,6 @@ static bool report_send(struct report_data *rd, bool check_state, bool send_alwa
 		}
 
 		while ((rs->cnt < pipeline_depth) &&
-			  (rs->subscriber->report_cnt < rs->subscriber->report_max) && //JS Modify: fix multiple input report issue
 		       (update_report(rd) || send_always)) {
 
 			switch (rs->report_id) {
@@ -961,20 +954,18 @@ static bool report_send(struct report_data *rd, bool check_state, bool send_alwa
 
 			__ASSERT_NO_MSG(rs->cnt < UINT8_MAX);
 			rs->cnt++;
-			rs->subscriber->report_cnt++;	//JS Modify: fix multiple input report issue
-			report_sent = true;				//JS Modify: fix multiple input report issue
 
 			/* To make sure report is sampled on every connection
 			 * event, add one additional report to the pipeline.
 			 */
 		}
-		if (rs->cnt != 0) {  //JS Modify: fix multiple input report issue
+
+		if (rs->cnt == 0) {
+			rs->state = STATE_CONNECTED_IDLE;
+		} else {
 			rs->state = STATE_CONNECTED_BUSY;
 		}
 	}
-	
-	
-	return report_sent; //JS Modify: fix multiple input report issue
 }
 
 static void report_issued(const void *subscriber_id, u8_t report_id, bool error)
@@ -986,77 +977,45 @@ static void report_issued(const void *subscriber_id, u8_t report_id, bool error)
 		return;
 	}
 
-	//JS Modify: fix multiple input report issue
-	bool subscriber_unblocked =
-		(subscriber->report_cnt == subscriber->report_max);
-	subscriber->report_cnt--;
-
 	struct report_state *rs = get_report_state(subscriber, report_id);
 	__ASSERT_NO_MSG(rs);
 
-	//JS Modify: fix multiple input report issue
-	if (rs->state != STATE_DISCONNECTED) {
-		__ASSERT_NO_MSG(rs->cnt > 0);
-		rs->cnt--;
+	if (rs->state == STATE_DISCONNECTED) {
+		return;
+	}
+
+	__ASSERT_NO_MSG(rs->cnt > 0);
+	rs->cnt--;
+
+	if (rs->linked_rd->linked_rs != rs) {
+		__ASSERT_NO_MSG(state.selected != subscriber);
+
+		LOG_INF("Subscriber %p not active", subscriber_id);
+		if (rs->cnt == 0) {
+			rs->state = STATE_CONNECTED_IDLE;
+		}
+		return;
+	}
+	__ASSERT_NO_MSG(state.selected == subscriber);
+
+	if (error) {
+		/* To maintain the sanity of HID state, clear
+		 * all recorded events and items.
+		 */
+		LOG_ERR("Error while sending report");
+
+		clear_report_data(rs->linked_rd);
 
 		if (rs->cnt == 0) {
 			rs->state = STATE_CONNECTED_IDLE;
 		}
 
-		if (error &&
-		    (rs->linked_rd->linked_rs == rs)) {
-			/* To maintain the sanity of HID state, clear
-			 * all recorded events and items.
-			 */
-			LOG_ERR("Error while sending report");
-
-
-		clear_report_data(rs->linked_rd);
-
-
-			return;
-		}
-	}
-	
-	//JS Modify: fix multiple input report issue
-	/* Pick next report to send. */
-	struct report_state *next_rs;
-
-	if (!subscriber_unblocked) {
-		next_rs = rs;
-	} else {
-		/* Subscriber was blocked. Let's see if there are some other
-		 * reports waiting to be sent.
-		 */
-		next_rs = rs + 1;
-		if (next_rs == &subscriber->state[ARRAY_SIZE(subscriber->state)]) {
-			next_rs = &subscriber->state[0];
-		}
+		return;
 	}
 
-
-	while (true) {
-			if ((next_rs->state != STATE_DISCONNECTED) &&
-				(next_rs->linked_rd->linked_rs == next_rs) &&
-				(next_rs->cnt == 0)) {
-				__ASSERT_NO_MSG(state.selected == subscriber);
-				if (report_send(next_rs->linked_rd, false, false)) {
-					break;
-				}
-			}
-
-			if (next_rs == rs) {
-				/* No report has data to be sent. */
-				break;
-			}
-
-			next_rs = next_rs + 1;
-			if (next_rs == &subscriber->state[ARRAY_SIZE(subscriber->state)]) {
-				next_rs = &subscriber->state[0];
-			}
-		
+	if (rs->cnt == 0) {
+		report_send(rs->linked_rd, false, false);
 	}
-	
 }
 
 static void connect(const void *subscriber_id, u8_t report_id)
@@ -1301,8 +1260,7 @@ static bool handle_motion_event(const struct motion_event *event)
 
 	rd->axes.axis[MOUSE_REPORT_AXIS_X] += event->dx;
 	rd->axes.axis[MOUSE_REPORT_AXIS_Y] += event->dy;
-	rd->update_needed = true;			//JS Modify: fix multiple input report issue
-		
+
 	report_send(rd, true, true);
 
 	return false;
@@ -1317,10 +1275,9 @@ static bool handle_wheel_event(const struct wheel_event *event)
 	struct report_data *rd = get_report_data(REPORT_ID_MOUSE);
 
 	rd->axes.axis[MOUSE_REPORT_AXIS_WHEEL] += event->wheel;
-	rd->update_needed = true;	//JS Modify: fix multiple input report issue
 
 	report_send(rd, true, true);
-	
+
 	return false;
 }
 
@@ -1364,7 +1321,7 @@ static bool handle_ble_peer_event(const struct ble_peer_event *event)
 {
 	switch (event->state) {
 	case PEER_STATE_CONNECTED:
-		connect_subscriber(event->id, false, UINT8_MAX);	//JS Modify: fix multiple input report issue
+		connect_subscriber(event->id, false);
 		break;
 
 	case PEER_STATE_DISCONNECTING:
@@ -1390,7 +1347,7 @@ static bool handle_usb_state_event(const struct usb_state_event *event)
 	switch (event->state) {
 	case USB_STATE_ACTIVE:
 		if (!get_subscriber_by_type(true)) {
-			connect_subscriber(event->id, true, 1); //JS Modify: fix multiple input report issue
+			connect_subscriber(event->id, true);
 		}
 		break;
 

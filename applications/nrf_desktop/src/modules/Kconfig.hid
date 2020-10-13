@@ -15,6 +15,7 @@ config DESKTOP_HID_REPORT_DESC
 config DESKTOP_HID_MOUSE
 	bool "Device is a HID mouse"
 	select DESKTOP_HID_REPORT_MOUSE_SUPPORT
+	
 	help
 	  Enable reports needed by a mouse.
 
@@ -27,13 +28,20 @@ config DESKTOP_HID_KEYBOARD
 	  Enable reports needed by a keyboard.
 
 config DESKTOP_HID_DONGLE
-	bool "Device is a HID keyboard"
+	bool "Device is a dongle"
 	select DESKTOP_HID_REPORT_MOUSE_SUPPORT
 	select DESKTOP_HID_REPORT_KEYBOARD_SUPPORT
 	select DESKTOP_HID_REPORT_SYSTEM_CTRL_SUPPORT
 	select DESKTOP_HID_REPORT_CONSUMER_CTRL_SUPPORT
 	help
 	  Enable reports needed by a dongle.
+	  
+config DESKTOP_HID_MOUSE_WITH_KEYPAD
+	bool "Device is a HID mouse with keypad"
+	select DESKTOP_HID_REPORT_MOUSE_SUPPORT
+	select DESKTOP_HID_REPORT_KEYBOARD_SUPPORT
+	help
+	  Enable reports needed by a mouse with keypad.	
 
 menu "HID Reports"
 
