@@ -3,8 +3,8 @@
  *
  * SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
  */
-
-/* File: motion_circle_ktimer.c */
+ 
+ /* File: motion_circle_notimer.c */
 
 #include <zephyr.h>
 #include <drivers/gpio.h>
@@ -25,6 +25,11 @@ LOG_MODULE_REGISTER(MODULE, CONFIG_DESKTOP_MOTION_LOG_LEVEL);
 #define LED_ON	0
 #define LED_OFF	1
 
+#define MOTION_SEND			29
+#define STATE_PEND_CONN		30
+#define DRAW_HANDLE			31
+
+
 enum state {
 	STATE_IDLE,
 	STATE_CONNECTED,
@@ -40,6 +45,9 @@ enum dir {
 };
 
 
+
+
+
 static struct device *led_port;
 	
 static s8_t circle_data[2];
@@ -48,8 +56,6 @@ static enum state state;
 
 
 static bool is_motion_active = false;
-
-
 
 
 static void motion_event_send(s16_t dx, s16_t dy)
@@ -86,11 +92,11 @@ static enum dir key_to_dir(u16_t key_id)
 
 static void send_motion(void)
 {
-	//gpio_pin_set(led_port, 29, 1);
+	gpio_pin_set(led_port, MOTION_SEND, 1);
 
-	motion_event_send((s16_t) circle_data[0], (s16_t) circle_data[1] );
+	motion_event_send((s16_t)circle_data[0], (s16_t)circle_data[1]);
 	
-	//gpio_pin_set(led_port, 29, 0);
+	gpio_pin_set(led_port, MOTION_SEND, 0);
 }
 
 
@@ -100,10 +106,11 @@ static int leds_init(void)
 		
 	if (!led_port) {
 		LOG_ERR("Could not bind to LED port %s",
-			DT_LABEL(DT_NODELABEL(gpio0)) );
+		DT_LABEL(DT_NODELABEL(gpio0))	);
 		return -EIO;
 	}
 	
+			
 	int err = gpio_pin_configure(led_port, DT_GPIO_PIN(DT_ALIAS(led2), gpios) , GPIO_OUTPUT);
 	
 	if (err) {
@@ -113,46 +120,44 @@ static int leds_init(void)
 	}
 	
 	if(led_port != NULL) {
-		(void)gpio_pin_set(led_port, DT_GPIO_PIN(DT_ALIAS(led2), gpios), LED_OFF); 
+		(void)gpio_pin_set(led_port, DT_GPIO_PIN(DT_ALIAS(led2), gpios)  , LED_OFF); 
 	}
  /**  For Testing purpose only 
-  *			
-	err = gpio_pin_configure(led_port, 31 , GPIO_DIR_OUT);
+  */		
+	err = gpio_pin_configure(led_port, MOTION_SEND, GPIO_OUTPUT);
 	if (err) {
 	LOG_ERR("Unable to config pin31, err %d", err);
 	led_port = NULL;
 	return err;
 	}
 	
-	(void)gpio_pin_configure(led_port, 30 , GPIO_DIR_OUT);
-	(void)gpio_pin_configure(led_port, 29 , GPIO_DIR_OUT);
- */
+	(void)gpio_pin_configure(led_port, STATE_PEND_CONN , GPIO_OUTPUT);
+	(void)gpio_pin_configure(led_port, DRAW_HANDLE, GPIO_OUTPUT);
+ 
 	return 0;
  
  
 }	
 
-void draw_timer_handler(struct k_timer *dummy)
+void draw_circle_handler(void)
 {
 	
+	(void)gpio_pin_set(led_port, DRAW_HANDLE, 1);
+
+
 	circle_test_get(circle_data);
 
-	//LOG_INF("s_idx = %i",s_idx);
-
-	is_motion_active = true;
 
    	if (state == STATE_CONNECTED) {	
 		
 		send_motion();
+		LOG_INF("Send motion");
 		state = STATE_PENDING;
-		//gpio_pin_set(led_port, 30, 0);
+		gpio_pin_set(led_port, STATE_PEND_CONN , 0);
 	}
-	//void)gpio_pin_set(led_port,31, 0);
-	
-	is_motion_active = false;
-}
+	(void)gpio_pin_set(led_port,DRAW_HANDLE, 0);
 
-K_TIMER_DEFINE(draw_timer, draw_timer_handler, NULL);
+}
 
 
 static bool handle_button_event(const struct button_event *event)
@@ -169,23 +174,26 @@ static bool handle_button_event(const struct button_event *event)
 	if(dir == DIR_START)
 	{
 		
-		/* Start spp timer , repeated per 1ms*/
-		k_timer_start(&draw_timer,K_MSEC(1), K_MSEC(1));
+
+		is_motion_active = true;
+		draw_circle_handler();
 		/* Lit LED3 */
 		if(led_port != NULL) {
-			(void)gpio_pin_set(led_port,  DT_GPIO_PIN(DT_ALIAS(led2), gpios), LED_ON); 
+			(void)gpio_pin_set(led_port, DT_GPIO_PIN(DT_ALIAS(led2), gpios) , LED_ON); 
 		}
 	    LOG_INF("Button event: Start button pressed");
 	}
 			
 	else if(dir == DIR_STOP)
 	{
-		/* Stop app timer */
-		k_timer_stop(&draw_timer);
+
 		is_motion_active = false;
+		if(state == STATE_PENDING)  
+			state = STATE_CONNECTED;
+		
 		/* Off LED3 */
 			if(led_port != NULL) {
-			(void)gpio_pin_set(led_port,  DT_GPIO_PIN(DT_ALIAS(led2), gpios), LED_OFF); 
+			(void)gpio_pin_set(led_port, DT_GPIO_PIN(DT_ALIAS(led2), gpios) , LED_OFF); 
 		}
 		LOG_INF("Button event: Stop button pressed");
 	}
@@ -209,13 +217,18 @@ static bool handle_module_state_event(const struct module_state_event *event)
 static bool handle_hid_report_sent_event(const struct hid_report_sent_event *event)
 {
 	if (event->report_id == REPORT_ID_MOUSE) {
+		
+		
 		if (state == STATE_PENDING) {
 			if (is_motion_active) {
-				send_motion();
-			} else {
+			
+				//LOG_INF("HID_REPORT_SEND EVENT: STATE CONNECTED");
 				state = STATE_CONNECTED;
-				//gpio_pin_set(led_port, 30, 1);
+				gpio_pin_set(led_port, STATE_PEND_CONN, 1);
+				draw_circle_handler();
+			
 			}
+		
 		}
 	}
 
@@ -241,10 +254,11 @@ static bool handle_hid_report_subscription_event(const struct hid_report_subscri
 			if (is_motion_active) {
 				send_motion();
 				state = STATE_PENDING;
-				//gpio_pin_set(led_port, 30, 0);
+				gpio_pin_set(led_port, STATE_PEND_CONN, 0);
 			} else {
+				//LOG_INF("SUBSCRIPTION EVENT: STATE CONNECTED");
 				state = STATE_CONNECTED;
-				//gpio_pin_set(led_port, 30, 1);
+				gpio_pin_set(led_port, STATE_PEND_CONN, 1);
 			}
 			return false;
 		}
