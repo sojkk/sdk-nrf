@@ -13,28 +13,71 @@
 #include <zephyr.h>
 #include <zephyr/types.h>
 
-LOG_MODULE_REGISTER(esb_ptx, CONFIG_ESB_PTX_APP_LOG_LEVEL);
+LOG_MODULE_REGISTER(esb_prx, CONFIG_ESB_PRX_APP_LOG_LEVEL);
 
 #define LED_ON 0
 #define LED_OFF 1
 
 #define DT_DRV_COMPAT nordic_nrf_clock
 
-static bool ready = true;
 static const struct device *led_port;
 static struct esb_payload rx_payload;
 static struct esb_payload tx_payload = ESB_CREATE_PAYLOAD(0,
-	0x01, 0x00, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08);
-/*
-#define _RADIO_SHORTS_COMMON                                                   \
-	(RADIO_SHORTS_READY_START_Msk | RADIO_SHORTS_END_DISABLE_Msk |         \
-	 RADIO_SHORTS_ADDRESS_RSSISTART_Msk |                                  \
-	 RADIO_SHORTS_DISABLED_RSSISTOP_Msk)
-*/
+	0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17);
+
+static int leds_init(void)
+{
+	led_port = device_get_binding(DT_GPIO_LABEL(DT_ALIAS(led0), gpios));
+	if (!led_port) {
+		LOG_ERR("Could not bind to LED port %s",
+			DT_GPIO_LABEL(DT_ALIAS(led0), gpios));
+		return -EIO;
+	}
+
+	const uint8_t pins[] = {DT_GPIO_PIN(DT_ALIAS(led0), gpios),
+			     DT_GPIO_PIN(DT_ALIAS(led1), gpios),
+			     DT_GPIO_PIN(DT_ALIAS(led2), gpios),
+			     DT_GPIO_PIN(DT_ALIAS(led3), gpios)};
+
+	for (size_t i = 0; i < ARRAY_SIZE(pins); i++) {
+		int err = gpio_pin_configure(led_port, pins[i], GPIO_OUTPUT);
+
+		if (err) {
+			LOG_ERR("Unable to configure LED%u, err %d.", i, err);
+			led_port = NULL;
+			return err;
+		}
+	}
+
+	return 0;
+}
+
+static void leds_update(uint8_t value)
+{
+	bool led0_status = !(value % 8 > 0 && value % 8 <= 4);
+	bool led1_status = !(value % 8 > 1 && value % 8 <= 5);
+	bool led2_status = !(value % 8 > 2 && value % 8 <= 6);
+	bool led3_status = !(value % 8 > 3);
+
+	gpio_port_pins_t mask =
+		1 << DT_GPIO_PIN(DT_ALIAS(led0), gpios) |
+		1 << DT_GPIO_PIN(DT_ALIAS(led1), gpios) |
+		1 << DT_GPIO_PIN(DT_ALIAS(led2), gpios) |
+		1 << DT_GPIO_PIN(DT_ALIAS(led3), gpios);
+
+	gpio_port_value_t val =
+		led0_status << DT_GPIO_PIN(DT_ALIAS(led0), gpios) |
+		led1_status << DT_GPIO_PIN(DT_ALIAS(led1), gpios) |
+		led2_status << DT_GPIO_PIN(DT_ALIAS(led2), gpios) |
+		led3_status << DT_GPIO_PIN(DT_ALIAS(led3), gpios);
+
+	if (led_port != NULL) {
+		gpio_port_set_masked_raw(led_port, mask, val);
+	}
+}
+
 void event_handler(struct esb_evt const *event)
 {
-	ready = true;
-
 	switch (event->evt_id) {
 	case ESB_EVENT_TX_SUCCESS:
 		LOG_DBG("TX SUCCESS EVENT");
@@ -43,7 +86,7 @@ void event_handler(struct esb_evt const *event)
 		LOG_DBG("TX FAILED EVENT");
 		break;
 	case ESB_EVENT_RX_RECEIVED:
-		while (esb_read_rx_payload(&rx_payload) == 0) {
+		if (esb_read_rx_payload(&rx_payload) == 0) {
 			LOG_DBG("Packet received, len %d : "
 				"0x%02x, 0x%02x, 0x%02x, 0x%02x, "
 				"0x%02x, 0x%02x, 0x%02x, 0x%02x",
@@ -52,6 +95,10 @@ void event_handler(struct esb_evt const *event)
 				rx_payload.data[3], rx_payload.data[4],
 				rx_payload.data[5], rx_payload.data[6],
 				rx_payload.data[7]);
+
+			leds_update(rx_payload.data[1]);
+		} else {
+			LOG_ERR("Error while reading rx packet");
 		}
 		break;
 	}
@@ -98,14 +145,12 @@ int esb_initialize(void)
 	struct esb_config config = ESB_DEFAULT_CONFIG;
 
 	config.protocol = ESB_PROTOCOL_ESB_DPL;
-	config.retransmit_delay = 600;
 	config.bitrate = ESB_BITRATE_2MBPS;
+	config.mode = ESB_MODE_PRX;
 	config.event_handler = event_handler;
-	config.mode = ESB_MODE_PTX;
 	config.selective_auto_ack = true;
 
 	err = esb_init(&config);
-
 	if (err) {
 		return err;
 	}
@@ -128,62 +173,11 @@ int esb_initialize(void)
 	return 0;
 }
 
-static int leds_init(void)
-{
-	led_port = device_get_binding(DT_GPIO_LABEL(DT_ALIAS(led0), gpios));
-	if (!led_port) {
-		LOG_ERR("Could not bind to LED port %s",
-			DT_GPIO_LABEL(DT_ALIAS(led0), gpios));
-		return -EIO;
-	}
-
-	const uint8_t pins[] = {DT_GPIO_PIN(DT_ALIAS(led0), gpios),
-			     DT_GPIO_PIN(DT_ALIAS(led1), gpios),
-			     DT_GPIO_PIN(DT_ALIAS(led2), gpios),
-			     DT_GPIO_PIN(DT_ALIAS(led3), gpios)};
-
-	for (size_t i = 0; i < ARRAY_SIZE(pins); i++) {
-		int err = gpio_pin_configure(led_port, pins[i], GPIO_OUTPUT);
-
-		if (err) {
-			LOG_ERR("Unable to configure LED%u, err %d", i, err);
-			led_port = NULL;
-			return err;
-		}
-	}
-
-	return 0;
-}
-
-static void leds_update(uint8_t value)
-{
-	bool led0_status = !(value % 8 > 0 && value % 8 <= 4);
-	bool led1_status = !(value % 8 > 1 && value % 8 <= 5);
-	bool led2_status = !(value % 8 > 2 && value % 8 <= 6);
-	bool led3_status = !(value % 8 > 3);
-
-	gpio_port_pins_t mask =
-		1 << DT_GPIO_PIN(DT_ALIAS(led0), gpios) |
-		1 << DT_GPIO_PIN(DT_ALIAS(led1), gpios) |
-		1 << DT_GPIO_PIN(DT_ALIAS(led2), gpios) |
-		1 << DT_GPIO_PIN(DT_ALIAS(led3), gpios);
-
-	gpio_port_value_t val =
-		led0_status << DT_GPIO_PIN(DT_ALIAS(led0), gpios) |
-		led1_status << DT_GPIO_PIN(DT_ALIAS(led1), gpios) |
-		led2_status << DT_GPIO_PIN(DT_ALIAS(led2), gpios) |
-		led3_status << DT_GPIO_PIN(DT_ALIAS(led3), gpios);
-
-	if (led_port != NULL) {
-		(void)gpio_port_set_masked_raw(led_port, mask, val);
-	}
-}
-
 void main(void)
 {
 	int err;
 
-	LOG_INF("Enhanced ShockBurst ptx sample");
+	LOG_INF("Enhanced ShockBurst prx sample");
 
 	err = clocks_start();
 	if (err) {
@@ -199,21 +193,22 @@ void main(void)
 	}
 
 	LOG_INF("Initialization complete");
-	LOG_INF("Sending test packet");
 
-	tx_payload.noack = false;
+	err = esb_write_payload(&tx_payload);
+	if (err) {
+		LOG_ERR("Write payload, err %d", err);
+		return;
+	}
+
+	LOG_INF("Setting up for packet receiption");
+
+	err = esb_start_rx();
+	if (err) {
+		LOG_ERR("RX setup failed, err %d", err);
+		return;
+	}
+
 	while (1) {
-		if (ready) {
-			ready = false;
-			esb_flush_tx();
-			leds_update(tx_payload.data[1]);
-
-			err = esb_write_payload(&tx_payload);
-			if (err) {
-				LOG_ERR("Payload write failed, err %d", err);
-			}
-			tx_payload.data[1]++;
-		}
-		k_sleep(K_MSEC(100));
+		/* do nothing */
 	}
 }

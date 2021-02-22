@@ -15,22 +15,27 @@
 
 LOG_MODULE_REGISTER(esb_ptx, CONFIG_ESB_PTX_APP_LOG_LEVEL);
 
-#define LED_ON 0
-#define LED_OFF 1
+#define LED_ON    0
+#define LED_OFF   1
 
 #define DT_DRV_COMPAT nordic_nrf_clock
+
+static const uint8_t  led_pins[] = {DT_GPIO_PIN(DT_ALIAS(led0), gpios),
+                                    DT_GPIO_PIN(DT_ALIAS(led1), gpios),
+                                    DT_GPIO_PIN(DT_ALIAS(led2), gpios),
+                                    DT_GPIO_PIN(DT_ALIAS(led3), gpios)};
 
 static bool ready = true;
 static const struct device *led_port;
 static struct esb_payload rx_payload;
 static struct esb_payload tx_payload = ESB_CREATE_PAYLOAD(0,
 	0x01, 0x00, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08);
-/*
+
 #define _RADIO_SHORTS_COMMON                                                   \
 	(RADIO_SHORTS_READY_START_Msk | RADIO_SHORTS_END_DISABLE_Msk |         \
 	 RADIO_SHORTS_ADDRESS_RSSISTART_Msk |                                  \
 	 RADIO_SHORTS_DISABLED_RSSISTOP_Msk)
-*/
+
 void event_handler(struct esb_evt const *event)
 {
 	ready = true;
@@ -128,32 +133,6 @@ int esb_initialize(void)
 	return 0;
 }
 
-static int leds_init(void)
-{
-	led_port = device_get_binding(DT_GPIO_LABEL(DT_ALIAS(led0), gpios));
-	if (!led_port) {
-		LOG_ERR("Could not bind to LED port %s",
-			DT_GPIO_LABEL(DT_ALIAS(led0), gpios));
-		return -EIO;
-	}
-
-	const uint8_t pins[] = {DT_GPIO_PIN(DT_ALIAS(led0), gpios),
-			     DT_GPIO_PIN(DT_ALIAS(led1), gpios),
-			     DT_GPIO_PIN(DT_ALIAS(led2), gpios),
-			     DT_GPIO_PIN(DT_ALIAS(led3), gpios)};
-
-	for (size_t i = 0; i < ARRAY_SIZE(pins); i++) {
-		int err = gpio_pin_configure(led_port, pins[i], GPIO_OUTPUT);
-
-		if (err) {
-			LOG_ERR("Unable to configure LED%u, err %d", i, err);
-			led_port = NULL;
-			return err;
-		}
-	}
-
-	return 0;
-}
 
 static void leds_update(uint8_t value)
 {
@@ -163,21 +142,48 @@ static void leds_update(uint8_t value)
 	bool led3_status = !(value % 8 > 3);
 
 	gpio_port_pins_t mask =
-		1 << DT_GPIO_PIN(DT_ALIAS(led0), gpios) |
-		1 << DT_GPIO_PIN(DT_ALIAS(led1), gpios) |
-		1 << DT_GPIO_PIN(DT_ALIAS(led2), gpios) |
-		1 << DT_GPIO_PIN(DT_ALIAS(led3), gpios);
+		1 << led_pins[0] |
+		1 << led_pins[1] |
+		1 << led_pins[2] |
+		1 << led_pins[3];
 
 	gpio_port_value_t val =
-		led0_status << DT_GPIO_PIN(DT_ALIAS(led0), gpios) |
-		led1_status << DT_GPIO_PIN(DT_ALIAS(led1), gpios) |
-		led2_status << DT_GPIO_PIN(DT_ALIAS(led2), gpios) |
-		led3_status << DT_GPIO_PIN(DT_ALIAS(led3), gpios);
+		led0_status << led_pins[0] |
+		led1_status << led_pins[1] |
+		led2_status << led_pins[2] |
+		led3_status << led_pins[3];
 
 	if (led_port != NULL) {
 		(void)gpio_port_set_masked_raw(led_port, mask, val);
 	}
 }
+
+static int gpios_init(void)
+{
+	int err;
+	
+	led_port = device_get_binding(DT_LABEL(DT_NODELABEL(gpio0)));
+	if (!led_port) {
+            LOG_ERR("Could not bind to LED port %s",
+                    DT_LABEL(DT_NODELABEL(gpio0)));
+            return -EIO;
+	}
+
+	for (size_t i = 0; i < ARRAY_SIZE(led_pins); i++) {
+            err = gpio_pin_configure(led_port, led_pins[i],
+                            GPIO_OUTPUT);
+            if (err) {
+                            LOG_ERR("Unable to configure LED%u, err %d", i, err);
+                            led_port = NULL;
+                            return err;
+                    }
+                      			
+	}
+	
+	return 0;
+	
+}
+
 
 void main(void)
 {
@@ -190,7 +196,7 @@ void main(void)
 		return;
 	}
 
-	leds_init();
+	gpios_init();
 
 	err = esb_initialize();
 	if (err) {
@@ -202,6 +208,9 @@ void main(void)
 	LOG_INF("Sending test packet");
 
 	tx_payload.noack = false;
+
+
+
 	while (1) {
 		if (ready) {
 			ready = false;

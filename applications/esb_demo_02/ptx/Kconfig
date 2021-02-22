@@ -1,0 +1,17 @@
+#
+# Copyright (c) 2020 Nordic Semiconductor
+#
+# SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
+#
+
+source "Kconfig.zephyr"
+
+rsource "../lib/Kconfig"
+
+menu "Enhanced ShockBurst: Transmitter"
+
+config APP_LOG_LEVEL
+	int "Log level for the ESB sample"
+	default 4
+
+endmenu
