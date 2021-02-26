@@ -24,7 +24,7 @@ LOG_MODULE_REGISTER(esb_prx, CONFIG_APP_LOG_LEVEL);
 
 static const struct device *led_port;
 
-#define PERIPH_NUM   2//1..2
+#define PERIPH_NUM   1//1..2
 
 #define	PAYLOAD_SIZE	64  //bytes
 
@@ -62,6 +62,8 @@ static int leds_init(void)
 			led_port = NULL;
 			return err;
 		}
+
+                gpio_pin_set(led_port, pins[i], 1);
 	}
 
 	return 0;
@@ -93,32 +95,16 @@ static void leds_update(uint8_t value)
 
 
 
-int lf_clock_start(void)
+void lf_clock_start(void)
 {
-	int err;
-	const struct device *clk;
+	NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_Xtal;
 
-	clk = device_get_binding(DT_INST_LABEL(0));
-	if (!clk) {
-		LOG_ERR("Clock device not found!");
-		return -EIO;
-	}
+  //Start LFCLK
+    NRF_CLOCK->EVENTS_LFCLKSTARTED = 0;
+    NRF_CLOCK->TASKS_LFCLKSTART = 1;
 
-	err = clock_control_on(clk, CLOCK_CONTROL_NRF_SUBSYS_LF);
-	if (err && (err != -EINPROGRESS)) {
-		LOG_ERR("HF clock start fail: %d", err);
-		return err;
-	}
+    while (NRF_CLOCK->EVENTS_LFCLKSTARTED == 0);
 
-	/* Block until clock is started.
-	 */
-	while (clock_control_get_status(clk, CLOCK_CONTROL_NRF_SUBSYS_LF) !=
-		CLOCK_CONTROL_STATUS_ON) {
-
-	}
-
-	LOG_DBG("HF clock started");
-	return 0;
 }
 
 
@@ -153,10 +139,8 @@ void main(void)
 
 	LOG_INF("Enhanced ShockBurst prx sample");
 
-	err = lf_clock_start();
-	if (err) {
-		return;
-	}
+	lf_clock_start();
+
 
 	leds_init();
 

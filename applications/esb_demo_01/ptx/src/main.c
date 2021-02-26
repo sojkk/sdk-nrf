@@ -30,12 +30,12 @@ static const struct device *led_port;
 static struct esb_payload rx_payload;
 static struct esb_payload tx_payload = ESB_CREATE_PAYLOAD(0,
 	0x01, 0x00, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08);
-
+/*
 #define _RADIO_SHORTS_COMMON                                                   \
 	(RADIO_SHORTS_READY_START_Msk | RADIO_SHORTS_END_DISABLE_Msk |         \
 	 RADIO_SHORTS_ADDRESS_RSSISTART_Msk |                                  \
 	 RADIO_SHORTS_DISABLED_RSSISTOP_Msk)
-
+*/
 void event_handler(struct esb_evt const *event)
 {
 	ready = true;

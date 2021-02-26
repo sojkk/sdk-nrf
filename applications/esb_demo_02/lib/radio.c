@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
  */
+#include "esb.h"
 #include "radio.h"
 #include "radio_config.h"
 #include <drivers/clock_control.h>
@@ -12,7 +13,6 @@
 #include <logging/log.h>
 #include <string.h>
 #include <nrf.h>
-#include <esb.h>
 #include <zephyr.h>
 #include <zephyr/types.h>
 
@@ -20,7 +20,7 @@
 LOG_MODULE_REGISTER(radio, CONFIG_APP_LOG_LEVEL);
 
 
-#define RSSI_SAMPLE_TIMES		6
+#define RSSI_SAMPLE_TIMES	6
 
 #define MAX_RTC_TASKS_DELAY     47                                          /**< Maximum delay until an RTC task is executed. */
 
@@ -52,17 +52,26 @@ static event_callback_t m_event_callback;
 
 static const uint8_t m_system_address[]= SYSTEM_ADDRESS ;
 
-static const uint8_t debug_pins[] = {DATA_SENDING_P0, DATA_SENDING_P1, DATA_SENDING_P2, DATA_SENDING_P3 ,DATA_SENDING_P4 };
+static const uint8_t dbg_pins[] = {DATA_SENDING_P0, DATA_SENDING_P1, DATA_SENDING_P2, DATA_SENDING_P3 ,DATA_SENDING_P4 };
 
 static radio_states_t rx_state;
 
 static bool is_rx_on = false;
+
+static const struct device *dbg_port;
+
+static void RADIO_RTC_IRQHandler(void);
 
 /**@brief Function for init the RTC1 timer.
  */
 static void radio_rtc_init(void)
 {
     RADIO_RTC->INTENSET = RTC_INTENSET_COMPARE0_Msk;
+
+    IRQ_DIRECT_CONNECT(RADIO_RTC_IRQn, 6 ,
+                       RADIO_RTC_IRQHandler, 0);
+
+    irq_enable(RADIO_RTC_IRQn);
 
     NVIC_ClearPendingIRQ(RADIO_RTC_IRQn);
     NVIC_EnableIRQ(RADIO_RTC_IRQn);
@@ -131,7 +140,7 @@ static void rtc_tx_event_handler(void)
 	}
         else
 	{
-		//gpio_pin_set(led_port, debug_pins[periph_cnt], 1); //Set debug pin for poll the periph
+		gpio_pin_set(dbg_port, dbg_pins[periph_cnt], 1); //Set debug pin for poll the periph
 	}
 	
 
@@ -150,15 +159,15 @@ static void rtc_rx_event_handler(void)
 			{
 				is_rx_on = false;
 				esb_stop_rx();
-				//nrf_gpio_pin_clear(DATA_SENDING_P4);
+				gpio_pin_set(dbg_port, dbg_pins[4], 0);
 				
 			}
 			else
 			{
 				is_rx_on = true;
 				
-				//nrf_gpio_pin_set(DATA_SENDING_P4);
-				
+				gpio_pin_set(dbg_port, dbg_pins[4], 1);
+
 				chan_cnt[0] = (chan_cnt[0] +1) % RADIO_CHAN_TAB_SIZE;
 				esb_set_rf_channel(m_radio_chan_tab[chan_cnt[0]]);
 				esb_start_rx();
@@ -168,7 +177,7 @@ static void rtc_rx_event_handler(void)
 	else if ( rx_state == RADIO_PERIPH_WAIT_FOR_ACK_WR)
 	{
 		esb_stop_rx();	
-		//nrf_gpio_pin_clear(DATA_SENDING_P4);
+		gpio_pin_set(dbg_port, dbg_pins[4], 0);
 		rx_state = RADIO_PERIPH_OPERATE;
 		
 		radio_rtc_clear_count();  
@@ -212,7 +221,8 @@ static void rtc_rx_event_handler(void)
 			}
 			
 			
-			//nrf_gpio_pin_set(DATA_SENDING_P4);
+                        gpio_pin_set(dbg_port, dbg_pins[4], 1);
+			
 		}
 		
 		esb_start_rx();
@@ -230,7 +240,8 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 	switch (p_event->evt_id)
     {
         case ESB_EVENT_TX_SUCCESS:
-				LOG_DBG("TX SUCCESS EVENT");				   
+                                LOG_DBG("TX SUCCESS EVENT");	                                                          
+                                __NOP();
 				break;
         case ESB_EVENT_TX_FAILED:
 				LOG_DBG("TX FAILED EVENT");
@@ -241,8 +252,8 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 				
 				m_log_success_cnt[periph_cnt]++; //log
 				
-				//nrf_gpio_pin_clear(debug_pins[periph_cnt]); //clear the debug pin if received data 
-		
+				gpio_pin_set(dbg_port, dbg_pins[periph_cnt],0); //clear the debug pin if received data 
+                             
 									
 				m_event_callback(RADIO_CENTRAL_DATA_RECEIVED);		   
 				
@@ -330,6 +341,28 @@ static void radio_hfclk_start( void )
 
 
 
+static void dbg_pins_init(void)
+{
+        int err;
+        
+        dbg_port = device_get_binding(DT_LABEL(DT_NODELABEL(gpio0)));
+	if (!dbg_port) {
+		LOG_ERR("Could not bind to radio debug port");
+         }
+
+         for (size_t i = 0; i < ARRAY_SIZE(dbg_pins); i++) {
+			err = gpio_pin_configure(dbg_port, dbg_pins[i],
+					GPIO_OUTPUT);
+			if (err) {
+					LOG_ERR("Unable to configure radio debug port");
+					dbg_port = NULL;
+				}
+                      		
+                        gpio_pin_set(dbg_port, dbg_pins[i], 0); 
+         }
+}
+
+
 
 
 int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t event_callback, uint8_t periph_num)	
@@ -343,14 +376,14 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 	struct esb_config config        = ESB_DEFAULT_CONFIG;
 	
 	config.protocol                 = ESB_PROTOCOL_ESB_DPL;
-	config.bitrate                  = ESB_BITRATE_2MBPS;
+	config.bitrate                  = ESB_BITRATE_1MBPS;
 	config.event_handler            = (is_central)?nrf_esb_ptx_event_handler:nrf_esb_prx_event_handler;
 	config.mode                     = (is_central)?ESB_MODE_PTX:ESB_MODE_PRX;
 	config.selective_auto_ack       = false;
 	config.tx_output_power          =  tx_power;
 	config.retransmit_count         = RETRAN_CNT;
 	config.retransmit_delay         = 600;
-
+        config.payload_length           = 64;
 	
 	err = esb_init(&config);
 	if (err) {
@@ -388,6 +421,8 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 
 	
 	radio_hfclk_start();
+
+        dbg_pins_init();
 		
 	return 0;
 }
@@ -414,7 +449,7 @@ void radio_fetch_packet(radio_data_t * rcv_data)
 	esb_read_rx_payload(&rx_payload);
 	
 	rcv_data->length = rx_payload.length;
-	rcv_data->periph_num = esb_get_addr_prefix(rx_payload.pipe);
+	rcv_data->periph_num = esb_get_addr_prefix(rx_payload.pipe); 
 	memcpy(rcv_data->data, rx_payload.data, rx_payload.length);	
 	
 }	
@@ -432,7 +467,7 @@ void radio_scan_for_poll(void)
       
       err = esb_start_rx();
 
-      //nrf_gpio_pin_set(DATA_SENDING_P4);
+      gpio_pin_set(dbg_port, dbg_pins[4] ,1);
 
       is_rx_on = true;
 	
@@ -447,7 +482,7 @@ void radio_put_packet(radio_data_t * tx_data)
 	
 }
 		
-void RADIO_RTC_IRQHandler(void)
+static void RADIO_RTC_IRQHandler(void)
 {
 	if (RADIO_RTC->EVENTS_COMPARE[0] == 1)	
 	{

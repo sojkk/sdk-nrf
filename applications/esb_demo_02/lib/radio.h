@@ -15,7 +15,7 @@
 
 #define RADIO_RTC                       NRF_RTC0
 #define RADIO_RTC_IRQn                  RTC0_IRQn
-#define RADIO_RTC_IRQHandler            RTC0_IRQHandler
+//#define RADIO_RTC_IRQHandler            RTC0_IRQHandler
 
 
 /**@brief Enhanced ShockBurst radio transmission power modes. */

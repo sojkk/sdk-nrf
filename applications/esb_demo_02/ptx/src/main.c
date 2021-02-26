@@ -32,32 +32,17 @@ static const struct device *led_port;
 
 
 
-int lf_clocks_start(void)
+void lf_clock_start(void)
 {
-	int err;
-	const struct device *clk;
 
-	clk = device_get_binding(DT_INST_LABEL(0));
-	if (!clk) {
-		LOG_ERR("Clock device not found!");
-		return -EIO;
-	}
+  NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_Xtal;
 
-	err = clock_control_on(clk, CLOCK_CONTROL_NRF_SUBSYS_LF);
-	if (err && (err != -EINPROGRESS)) {
-		LOG_ERR("HF clock start fail: %d", err);
-		return err;
-	}
+  //Start LFCLK
+    NRF_CLOCK->EVENTS_LFCLKSTARTED = 0;
+    NRF_CLOCK->TASKS_LFCLKSTART = 1;
 
-	/* Block until clock is started.
-	 */
-	while (clock_control_get_status(clk, CLOCK_CONTROL_NRF_SUBSYS_LF) !=
-		CLOCK_CONTROL_STATUS_ON) {
+    while (NRF_CLOCK->EVENTS_LFCLKSTARTED == 0);
 
-	}
-
-	LOG_DBG("LF clock started");
-	return 0;
 }
 
 
@@ -80,7 +65,8 @@ static int gpios_init(void)
 					led_port = NULL;
 					return err;
 				}
-                      			
+                      		
+                        gpio_pin_set(led_port, led_pins[i], 1); 
 	}
 	
 	return 0;
@@ -131,15 +117,11 @@ void radio_evt_cb(uint8_t radio_event)
 
 void main(void)
 {
-	int err;
 
 	LOG_INF("Enhanced ShockBurst ptx sample");
 
-	err = lf_clocks_start();
-	if (err) {
-		return;
-	}
-
+	//lf_clock_start();
+	
 	gpios_init();
 	
         radio_setup(true, RADIO_TX_POWER_4DBM, radio_evt_cb, 0);
@@ -150,6 +132,6 @@ void main(void)
 
 	while (1) {
 		
-                k_sleep(K_MSEC(100));
+              /* do nothing */
 	}
 }
