@@ -120,7 +120,7 @@ void main(void)
 
 	LOG_INF("Enhanced ShockBurst ptx sample");
 
-	//lf_clock_start();
+	lf_clock_start();
 	
 	gpios_init();
 	
