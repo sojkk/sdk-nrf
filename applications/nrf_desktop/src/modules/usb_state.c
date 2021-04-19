@@ -260,9 +260,11 @@ static void send_hid_report(const struct hid_report_event *event)
 	} else {
 		usb_hid->sent_report_id = event->dyndata.data[0];
 	}
-
-	int err = hid_int_ep_write(usb_hid->dev, event->dyndata.data,
-				   event->dyndata.size, NULL);
+//JS Modify: 4/15/2021 : fix boot protocol issue.
+	int err = hid_int_ep_write(usb_hid->dev, report_buffer,
+				   report_size, NULL);
+//	int err = hid_int_ep_write(usb_hid->dev, event->dyndata.data,
+//				   event->dyndata.size, NULL);
 
 	if (err) {
 		LOG_ERR("Cannot send report (%d)", err);
