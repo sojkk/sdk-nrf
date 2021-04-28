@@ -1755,6 +1755,42 @@ int esb_reuse_pid(uint8_t pipe)
 	return 0;
 }
 
+
+
+void esb_debug_pins_configure(void)
+{
+    NRF_GPIOTE->CONFIG[0] = GPIOTE_CONFIG_MODE_Task << GPIOTE_CONFIG_MODE_Pos |
+                            GPIOTE_CONFIG_OUTINIT_Low << GPIOTE_CONFIG_OUTINIT_Pos |
+                            30 << GPIOTE_CONFIG_PSEL_Pos;
+    NRF_GPIOTE->CONFIG[1] = GPIOTE_CONFIG_MODE_Task << GPIOTE_CONFIG_MODE_Pos |
+                            GPIOTE_CONFIG_OUTINIT_Low << GPIOTE_CONFIG_OUTINIT_Pos |
+                            31 << GPIOTE_CONFIG_PSEL_Pos;
+
+#if defined(NRF52832_XXAA) || defined(NRF52810_XXAA)
+	
+    //JS Modify : 3/19/2021 for debugging
+    NRF_PPI->CH[0].EEP = (uint32_t)&NRF_RADIO->EVENTS_READY;
+    NRF_PPI->CH[0].TEP = (uint32_t)&NRF_GPIOTE->TASKS_SET[0];
+    NRF_PPI->CH[1].EEP = (uint32_t)&NRF_RADIO->EVENTS_END;
+    NRF_PPI->CH[1].TEP = (uint32_t)&NRF_GPIOTE->TASKS_SET[1];
+	
+#else
+    NRF_PPI->CH[0].EEP = (uint32_t)&NRF_RADIO->EVENTS_TXREADY;
+    NRF_PPI->CH[0].TEP = (uint32_t)&NRF_GPIOTE->TASKS_SET[0];
+
+    NRF_PPI->CH[1].EEP = (uint32_t)&NRF_RADIO->EVENTS_RXREADY;
+    NRF_PPI->CH[1].TEP = (uint32_t)&NRF_GPIOTE->TASKS_SET[1];
+#endif
+
+    NRF_PPI->CH[2].EEP = (uint32_t)&NRF_RADIO->EVENTS_DISABLED;
+    NRF_PPI->CH[2].TEP = (uint32_t)&NRF_GPIOTE->TASKS_CLR[0];
+    NRF_PPI->FORK[2].TEP = (uint32_t)&NRF_GPIOTE->TASKS_CLR[1];
+
+    NRF_PPI->CHENSET = 0x7 << 0;
+}
+
+
+
 uint8_t esb_get_addr_prefix(uint8_t pipe)
 {	
 	if (current_payload->pipe >= CONFIG_ESB_PIPE_COUNT) {

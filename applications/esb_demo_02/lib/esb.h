@@ -486,6 +486,10 @@ int esb_reuse_pid(uint8_t pipe);
 
 uint8_t esb_get_addr_prefix(uint8_t pipe);
 
+
+
+void esb_debug_pins_configure(void);
+
 /** @} */
 
 #ifdef __cplusplus

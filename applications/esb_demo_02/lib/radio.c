@@ -19,7 +19,6 @@
 
 LOG_MODULE_REGISTER(radio, CONFIG_APP_LOG_LEVEL);
 
-
 #define RSSI_SAMPLE_TIMES	6
 
 #define MAX_RTC_TASKS_DELAY     47                                          /**< Maximum delay until an RTC task is executed. */
@@ -52,7 +51,7 @@ static event_callback_t m_event_callback;
 
 static const uint8_t m_system_address[]= SYSTEM_ADDRESS ;
 
-static const uint8_t dbg_pins[] = {DATA_SENDING_P0, DATA_SENDING_P1, DATA_SENDING_P2, DATA_SENDING_P3 ,DATA_SENDING_P4 };
+static const uint8_t dbg_pins[] = {DATA_SENDING_P0, DATA_SENDING_P1, DATA_SENDING_P2, DATA_SENDING_P3 ,DATA_SENDING_P4, DATA_SENDING_P5 };
 
 static radio_states_t rx_state;
 
@@ -252,7 +251,8 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 				
 				m_log_success_cnt[periph_cnt]++; //log
 				
-				gpio_pin_set(dbg_port, dbg_pins[periph_cnt],0); //clear the debug pin if received data 
+
+                                gpio_pin_set(dbg_port, dbg_pins[periph_cnt],0); //clear the debug pin if received data 
                              
 									
 				m_event_callback(RADIO_CENTRAL_DATA_RECEIVED);		   
@@ -265,6 +265,9 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 		
 				break;
 	}	
+
+
+        //gpio_pin_set(dbg_port, dbg_pins[periph_cnt],0); //clear the debug pin for testing timer only
 		
 		if (p_event->evt_id != ESB_EVENT_TX_SUCCESS)   // TX_SUCCESS deplicates with DATA_RECEIVED
 		{	

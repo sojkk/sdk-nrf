@@ -123,11 +123,14 @@ void main(void)
 	lf_clock_start();
 	
 	gpios_init();
-	
+
+        esb_debug_pins_configure();
+		
         radio_setup(true, RADIO_TX_POWER_4DBM, radio_evt_cb, 0);
 
         radio_poll_timer_start(POLL_TICKS);
-		
+
+      
         LOG_INF("Central PTX started...");
 
 	while (1) {

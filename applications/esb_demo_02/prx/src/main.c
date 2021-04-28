@@ -97,7 +97,7 @@ static void leds_update(uint8_t value)
 
 void lf_clock_start(void)
 {
-	NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_Xtal;
+	NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_RC;
 
   //Start LFCLK
     NRF_CLOCK->EVENTS_LFCLKSTARTED = 0;
@@ -141,8 +141,9 @@ void main(void)
 
 	lf_clock_start();
 
-
 	leds_init();
+
+        esb_debug_pins_configure();
 
         data_init();
 
