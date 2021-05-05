@@ -12,6 +12,6 @@ menu "Enhanced ShockBurst: Receiver"
 
 config APP_LOG_LEVEL
 	int "Log level for the ESB sample"
-	default 3
+	default 0
 
 endmenu
