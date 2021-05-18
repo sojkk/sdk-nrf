@@ -102,7 +102,7 @@
 		};
 		storage_partition: partition@3e000 {
 			label = "storage";
-			reg = <0x0003e000 0x00002000>;
+			reg = <0x0003a000 0x00006000>;
 		};
 	};
 };
