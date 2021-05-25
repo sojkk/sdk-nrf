@@ -436,6 +436,41 @@ void  esb_send_thread(void)
 }	
 
 
+
+void usb_report_thread(void)
+{
+	int ret;
+	uint8_t report[4] = { 0x00 };
+		
+	k_sem_take(&usb_init_ok, K_FOREVER);	
+		
+	LOG_INF("Starting usb report thread!");
+	
+	while (true) {
+		k_sem_take(&sem, K_FOREVER);
+
+		report[MOUSE_BTN_REPORT_POS] = status[MOUSE_BTN_REPORT_POS];
+		report[MOUSE_X_REPORT_POS] = status[MOUSE_X_REPORT_POS];
+		status[MOUSE_X_REPORT_POS] = 0U;
+		report[MOUSE_Y_REPORT_POS] = status[MOUSE_Y_REPORT_POS];
+		status[MOUSE_Y_REPORT_POS] = 0U;
+		ret = hid_int_ep_write(hid_dev, report, sizeof(report), NULL);
+		if (ret) {
+			LOG_ERR("HID write error, %d", ret);
+		}
+
+		/* Toggle LED on sent report */
+		ret = gpio_pin_toggle(led_dev, LED);
+		if (ret < 0) {
+			LOG_ERR("Failed to toggle the LED pin, error: %d", ret);
+		}
+		
+		k_sleep(K_MSEC(100));
+	}
+	
+}	
+
+
 void main(void)
 {
 	int ret;
@@ -511,38 +546,7 @@ void main(void)
 }
 
 
-void usb_report_thread(void)
-{
-	int ret;
-	uint8_t report[4] = { 0x00 };
-		
-	k_sem_take(&usb_init_ok, K_FOREVER);	
-		
-	LOG_INF("Starting usb report thread!");
-	
-	while (true) {
-		k_sem_take(&sem, K_FOREVER);
 
-		report[MOUSE_BTN_REPORT_POS] = status[MOUSE_BTN_REPORT_POS];
-		report[MOUSE_X_REPORT_POS] = status[MOUSE_X_REPORT_POS];
-		status[MOUSE_X_REPORT_POS] = 0U;
-		report[MOUSE_Y_REPORT_POS] = status[MOUSE_Y_REPORT_POS];
-		status[MOUSE_Y_REPORT_POS] = 0U;
-		ret = hid_int_ep_write(hid_dev, report, sizeof(report), NULL);
-		if (ret) {
-			LOG_ERR("HID write error, %d", ret);
-		}
-
-		/* Toggle LED on sent report */
-		ret = gpio_pin_toggle(led_dev, LED);
-		if (ret < 0) {
-			LOG_ERR("Failed to toggle the LED pin, error: %d", ret);
-		}
-		
-		k_sleep(K_MSEC(100));
-	}
-	
-}	
 
 /* Make sure we register endpoint before RPMsg Service is initialized. */
 
@@ -558,6 +562,8 @@ int register_endpoint(const struct device *arg)
 	}
 
 	ep_id = ep_status;
+
+        LOG_INF("Endpoint register OK, ep_id =%d",ep_id);
 
 	return 0;
 }
