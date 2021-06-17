@@ -29,11 +29,11 @@
 #define	RETRAN_CNT                  0
 
 #define ADJ                         25
-#define POLL_TICKS                  150 //30.5 us  PER TICK  
+#define POLL_TICKS                  30 //30.5 us  PER TICK  
 
 
 #define RX_SEARCH_PERIOD            POLL_TICKS * (NUM_OF_PERIPH+2)
-#define RX_OPERATE_PERIOD_W_WAIT    POLL_TICKS * (NUM_OF_PERIPH) - 2*ADJ
+#define RX_OPERATE_PERIOD_W_WAIT    POLL_TICKS * (NUM_OF_PERIPH) - 2*ADJ 
 #define	RX_WAIT_FOR_ACK_WR_PERIOD			ADJ
 #define RX_OPERATE_PERIOD           POLL_TICKS * (NUM_OF_PERIPH)
 	
