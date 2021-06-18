@@ -38,6 +38,15 @@ extern "C" {
 #define ESB_EVT_IRQHandler SWI0_IRQHandler
 #endif
 
+
+//JS Modify
+#if defined(CONFIG_RADIO_FAST_RAMP)	
+#define NRF_ESB_RAMP_TIME                      40
+#else
+#define NRF_ESB_RAMP_TIME                      140
+#endif
+
+
 /** @brief Default radio parameters.
  *
  *  Roughly equal to the nRF24Lxx default parameters except for CRC,
@@ -57,29 +66,11 @@ extern "C" {
 		.radio_irq_priority = 1,				       \
 		.event_irq_priority = 2,				       \
 		.payload_length = 32,					       \
-		.selective_auto_ack = false                                    \
+		.selective_auto_ack = false,                                   \
+		.ru_time = NRF_ESB_RAMP_TIME                                   \
 	}
 
-/** @brief Default legacy radio parameters.
- *
- *  Identical to the nRF24Lxx defaults.
- */
-#define ESB_LEGACY_CONFIG                                                      \
-	{                                                                      \
-		.protocol = ESB_PROTOCOL_ESB,				       \
-		.mode = ESB_MODE_PTX,					       \
-		.event_handler = 0,					       \
-		.bitrate = ESB_BITRATE_2MBPS,				       \
-		.crc = ESB_CRC_8BIT,					       \
-		.tx_output_power = ESB_TX_POWER_0DBM,			       \
-		.retransmit_delay = 600,				       \
-		.retransmit_count = 3,					       \
-		.tx_mode = ESB_TXMODE_AUTO,				       \
-		.radio_irq_priority = 1,				       \
-		.event_irq_priority = 2,				       \
-		.payload_length = 32,					       \
-		.selective_auto_ack = false                                    \
-	}
+
 
 /** @brief Macro to create an initializer for a TX data packet.
  *
@@ -249,6 +240,7 @@ struct esb_config {
 				   *  will be acknowledged ignoring the noack
 				   *  field.
 				   */
+	uint8_t	ru_time;
 };
 
 /** @brief Initialize the Enhanced ShockBurst module.
@@ -492,7 +484,7 @@ int esb_set_bitrate(enum esb_bitrate bitrate);
 int esb_reuse_pid(uint8_t pipe);
 
 
-void esb_debug_pins_configure(void);
+//void esb_debug_pins_configure(void);
 
 
 uint8_t esb_get_addr_prefix(uint8_t pipe);

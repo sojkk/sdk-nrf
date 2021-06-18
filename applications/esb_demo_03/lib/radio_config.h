@@ -5,12 +5,21 @@
 #ifndef RADIO_CONFIG_H
 #define RADIO_CONFIG_H
 
+#if defined(CONFIG_SOC_SERIES_NRF53X)
+#define DATA_SENDING_P0             4
+#define DATA_SENDING_P1             5
+#define DATA_SENDING_P2             6
+#define DATA_SENDING_P3             7
+#define DATA_SENDING_P4             25
+#define DATA_SENDING_P5             26
+#else
 #define DATA_SENDING_P0             3
 #define DATA_SENDING_P1             4
 #define DATA_SENDING_P2             28
 #define DATA_SENDING_P3             29
 #define DATA_SENDING_P4             30
 #define DATA_SENDING_P5             31
+#endif
 
 #define NUM_OF_PERIPH               2
 
@@ -29,7 +38,7 @@
 #define	RETRAN_CNT                  0
 
 #define ADJ                         25
-#define POLL_TICKS                  150 //30.5 us  PER TICK  
+#define POLL_TICKS                  30 //30.5 us  PER TICK  
 
 
 #define RX_SEARCH_PERIOD            POLL_TICKS * (NUM_OF_PERIPH+2)

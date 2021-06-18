@@ -690,7 +690,7 @@ static void on_radio_disabled_tx(void)
 	 * received by the time defined in wait_for_ack_timeout_us
 	 */
 	ESB_SYS_TIMER->CC[0] = wait_for_ack_timeout_us;
-	ESB_SYS_TIMER->CC[1] = esb_cfg.retransmit_delay - 130;
+	ESB_SYS_TIMER->CC[1] = esb_cfg.retransmit_delay - esb_cfg.ru_time; //JS_Modify;
 	ESB_SYS_TIMER->TASKS_CLEAR = 1;
 	ESB_SYS_TIMER->EVENTS_COMPARE[0] = 0;
 	ESB_SYS_TIMER->EVENTS_COMPARE[1] = 0;
@@ -1010,6 +1010,13 @@ int esb_init(const struct esb_config *config)
 	event_handler = config->event_handler;
 
 	memcpy(&esb_cfg, config, sizeof(esb_cfg));
+
+		//JS Modify
+	if(esb_cfg.ru_time == 40)   //enable fast mode
+    {	
+		NRF_RADIO->MODECNF0 |= true;
+    }
+	
 
 	interrupt_flags = 0;
 
@@ -1518,7 +1525,7 @@ int esb_reuse_pid(uint8_t pipe)
 
 	return 0;
 }
-
+/*
 void esb_debug_pins_configure(void)
 {
     NRF_GPIOTE->CONFIG[0] = GPIOTE_CONFIG_MODE_Task << GPIOTE_CONFIG_MODE_Pos |
@@ -1550,7 +1557,7 @@ void esb_debug_pins_configure(void)
 
     NRF_PPI->CHENSET = 0x7 << 0;
 }
-
+*/
 
 
 uint8_t esb_get_addr_prefix(uint8_t pipe)

@@ -35,7 +35,8 @@ static const struct device *led_port;
 void lf_clock_start(void)
 {
 
-  NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_Xtal;
+  //NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_Xtal;
+    NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_LFXO;
 
   //Start LFCLK
     NRF_CLOCK->EVENTS_LFCLKSTARTED = 0;
@@ -124,8 +125,9 @@ void main(void)
 	
 	gpios_init();
 	
-        radio_setup(true, RADIO_TX_POWER_4DBM, radio_evt_cb, 0);
-
+      //radio_setup(true, RADIO_TX_POWER_4DBM, radio_evt_cb, 0);
+        radio_setup(true, RADIO_TX_POWER_0DBM, radio_evt_cb, 0);
+          
         radio_poll_timer_start(POLL_TICKS);
 
         LOG_INF("Central PTX started...");

@@ -24,7 +24,7 @@ LOG_MODULE_REGISTER(esb_prx, CONFIG_APP_LOG_LEVEL);
 
 static const struct device *led_port;
 
-#define PERIPH_NUM   1//1..2
+#define PERIPH_NUM   2//1..2
 
 #define	PAYLOAD_SIZE	64  //bytes
 
@@ -97,7 +97,12 @@ static void leds_update(uint8_t value)
 
 void lf_clock_start(void)
 {
+
+#if defined(CONFIG_SOC_SERIES_NRF53X)
+	NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_LFRC;
+#else
 	NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_RC;
+#endif
 
   //Start LFCLK
     NRF_CLOCK->EVENTS_LFCLKSTARTED = 0;
@@ -145,7 +150,7 @@ void main(void)
 
         data_init();
 
-        radio_setup(false, RADIO_TX_POWER_4DBM, radio_evt_cb, PERIPH_NUM);
+        radio_setup(false, RADIO_TX_POWER_0DBM, radio_evt_cb, PERIPH_NUM);
 
         radio_put_packet(&data_send);
 	
