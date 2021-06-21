@@ -126,6 +126,7 @@ void main(void)
 	gpios_init();
 	
       //radio_setup(true, RADIO_TX_POWER_4DBM, radio_evt_cb, 0);
+
         radio_setup(true, RADIO_TX_POWER_0DBM, radio_evt_cb, 0);
           
         radio_poll_timer_start(POLL_TICKS);
