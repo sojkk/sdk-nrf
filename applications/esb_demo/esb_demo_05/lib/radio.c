@@ -28,7 +28,9 @@ static uint8_t 	central_loss_cnt[] = {0, 0, 0};
 static bool 	update_ch_tab_flag = false;    		 // Flag for update channel table, =true allows update
 static uint8_t  switch_channel_counter[] = {0, 0}; //Central down counter for channel switch, zero means it is the current channel tab
 static uint8_t  periph_sw_counter = 0;	
-
+static bool		tmp_central_success[] = { false, false};
+static bool		periph_on_sync[] = {false, false};	
+static uint8_t  periph_loss_sync_cnt[] = {0, 0};
 
 //log
 static uint16_t m_log_total_cnt[] =  {0, 0};
@@ -40,11 +42,14 @@ static bool m_rx_received = false;
 
 static uint8_t chan_cnt = 0;
 
-static uint8_t radio_table[] = RADIO_CHAN_TAB;
+static uint8_t radio_ch_tab[] = RADIO_CHAN_TAB;
+
+static uint8_t radio_table[TOTAL_CHAN_TAB_SIZE][2] ; 
 
 static uint8_t unused_radio_table[RADIO_UNUSED_CHAN_TAB_SIZE];
 
 static uint8_t m_radio_chan_tab[RADIO_CHAN_TAB_SIZE];
+
 static uint8_t next_radio_chan_tab[RADIO_CHAN_TAB_SIZE];
 
 static uint8_t rx_loss_cnt = 0;
@@ -135,7 +140,62 @@ static __INLINE void radio_rtc_compare0_set(uint32_t value)
 static __INLINE void radio_rtc_clear_count(void)
 {
 	 RADIO_RTC->TASKS_CLEAR =1;
-}	
+}
+
+
+static void radio_scan_sort_all_channels_rssi(void)
+{
+
+	uint8_t i,j, tmp[2];
+	uint8_t  prev_rssi_sample[] = { 0xFF, 0xFF, 0xFF, 																 
+									0xFF, 0xFF, 0xFF, 
+									0xFF, 0xFF, 0xFF}; 
+	
+		//Refresh the RRSI values in the table
+		for (i=0; i< TOTAL_CHAN_TAB_SIZE; i++)
+			{
+				 radio_table[i][1] = 0xFF;
+			}
+		
+
+	for (j=0; j <50; j++)
+	{	
+			for (i=0; i<TOTAL_CHAN_TAB_SIZE; i++)
+			{
+					prev_rssi_sample[i] = radio_table[i][1];
+					radio_table[i][1] = esb_rssi_scan(radio_table[i][0]);	
+				
+					//max hold the sample data
+					if ( radio_table[i][1] > prev_rssi_sample[i] )
+					{
+						radio_table[i][1] = prev_rssi_sample[i];   //discard the current one if the previous one is smaller in absolute value 
+					}				
+					
+							k_sleep(K_USEC(10));
+			}	
+
+			
+	}
+		//sort in 
+		for (i=0; i<TOTAL_CHAN_TAB_SIZE ; i++)
+		{
+			for (j=i+1; j<TOTAL_CHAN_TAB_SIZE; j++)
+			{
+				if(radio_table[i][1] < radio_table[j][1])
+				{
+					tmp[0] = radio_table[i][0];
+					tmp[1] = radio_table[i][1];
+					radio_table[i][0] = radio_table[j][0];
+					radio_table[i][1] = radio_table[j][1];
+					radio_table[j][0] = tmp[0];
+					radio_table[j][1] = tmp[1];
+				}
+			}		
+		}
+		
+		
+}
+
 
 
 static void update_unused_radio_table(uint8_t ch)
@@ -162,8 +222,16 @@ static void rtc_tx_event_handler(void)
 	
 	radio_rtc_clear_count();
 	
+	periph_loss_sync_cnt[periph_cnt]++;
+	
+	if (periph_loss_sync_cnt[periph_cnt] >= PERIPH_ON_SYNC_CNT)
+	{
+		periph_on_sync[periph_cnt] = false;
+		
+	}
+	
 	//server periphs 
-	esb_set_addr_prefix(periph_cnt+1, 1);
+	esb_set_addr_prefix(periph_cnt+1, DATA_PIPE);
 	
 	//Upload data to dum payload
 	dum_payload.data[0] = switch_channel_counter[periph_cnt];
@@ -185,10 +253,13 @@ static void rtc_tx_event_handler(void)
 	if(update_ch_tab_flag)
 	{	
 		//aFH : increment loss cnt for every rtc timer expires, value resets to 0 if gets RX_RECEIVED event		
-				central_loss_cnt[chan_cnt]++;
+				if(periph_on_sync[periph_cnt])
+				{
+					central_loss_cnt[chan_cnt]++;
+				}	
 				if (switch_channel_counter[periph_cnt]!=0) // only update switch cnt at the beginning of the frame		
 				{	
-						switch_channel_counter[periph_cnt]--;				
+					switch_channel_counter[periph_cnt]--;				
 				}
 				else // use new channel tab for hopping if switch_channel_counter goes to zero
 				{
@@ -238,8 +309,9 @@ static void rtc_rx_event_handler(void)
 				
 				gpio_pin_set(dbg_port, dbg_pins[4], 1);
 
-				chan_cnt = (chan_cnt +1) % RADIO_CHAN_TAB_SIZE;
-				esb_set_rf_channel(m_radio_chan_tab[chan_cnt]);
+				//use radio_table if go to search mode
+				chan_cnt = (chan_cnt +1) % TOTAL_CHAN_TAB_SIZE;
+				esb_set_rf_channel(radio_table[chan_cnt][0]);
 				esb_start_rx();
 				
 			}
@@ -277,6 +349,8 @@ static void rtc_rx_event_handler(void)
 			radio_rtc_clear_count();
 			radio_rtc_compare0_set(RX_SEARCH_PERIOD);
 			 m_rx_received = false;
+			 //reset chan_cnt and go to SEARCH MODE			
+			chan_cnt =0;
 		}
 		else
 		{		
@@ -319,8 +393,8 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 	switch (p_event->evt_id)
     {
         case ESB_EVENT_TX_SUCCESS:
-                                LOG_DBG("TX SUCCESS EVENT");	                                                          
-                                __NOP();
+				LOG_DBG("TX SUCCESS EVENT");	                                                          
+				__NOP();
 				break;
         case ESB_EVENT_TX_FAILED:
 				LOG_DBG("TX FAILED EVENT");
@@ -330,16 +404,31 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 				LOG_DBG("RX RECEIVED EVENT");
 				
 				//aFH: Resets central loss cent & switch channel counter for particular peripheral if get rx received
-				central_loss_cnt[chan_cnt] =0;
+				periph_on_sync[periph_cnt]= true;
+				tmp_central_success[periph_cnt] = true;
+				periph_loss_sync_cnt[periph_cnt] =0;
+/************JS Modify: Add to fix the hop issue when interference   
+				     go to here if get data received **********************************/
+				if (periph_cnt ==1)
+				{		
+					if ( (periph_on_sync[0]?tmp_central_success[0]:true) && (periph_on_sync[1]?tmp_central_success[1]: true) )
+					{	
+								central_loss_cnt[chan_cnt] =0;	//reset loss cnt if rcv pkt from both periphs 
+										
+					}
+
+					
+				}					
+/*****************************************************/
+
 				switch_channel_counter[periph_cnt] =0;
-				//if ( (central_loss_cnt[0]==0)  && (central_loss_cnt[1]==0) )
-					update_ch_tab_flag = true;
+				update_ch_tab_flag = true;
 				
 				
 				m_log_success_cnt[periph_cnt]++; //log
 				
 
-                                gpio_pin_set(dbg_port, dbg_pins[periph_cnt],0); //clear the debug pin if received data 
+				gpio_pin_set(dbg_port, dbg_pins[periph_cnt],0); //clear the debug pin if received data 
                              
 									
 				m_event_callback(RADIO_CENTRAL_DATA_RECEIVED);		   
@@ -368,6 +457,19 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 
 			m_log_total_cnt[periph_cnt]++; //log
 		}
+		else //periph_cnt =1
+		{
+			if ( (periph_on_sync[0]?tmp_central_success[0]:true) && (periph_on_sync[1]?tmp_central_success[1]: true) )
+			{	
+						central_loss_cnt[chan_cnt] =0;	//reset loss cnt if rcv pkt from both periphs 
+				
+						//Reset the tmp array	
+						tmp_central_success[0] = false;
+						tmp_central_success[1] = false;
+			}
+			
+			
+		}
 		
 //log		
 		if  (m_log_total_cnt[periph_cnt]== LOG_CNT)		
@@ -392,36 +494,31 @@ static void nrf_esb_prx_event_handler(struct esb_evt const *p_event)
 				break;
         case ESB_EVENT_RX_RECEIVED:
 				LOG_DBG("RX RECEIVED EVENT");
-	
-				//if (p_event->tx_attempts <= RETRAN_CNT)
-				//		m_rx_received = true;
-	
+
 				if (esb_read_rx_payload(&dum_payload) == 0  )          
 				{
-                                      //aFH: update channel switch counter and upload next channel tab
-                                      //periph_sw_counter = dum_payload.data[0];									
-                                      //if (periph_sw_counter >0)  update_ch_tab_flag = true;
-                                      if  ( (rx_state == RADIO_PERIPH_SEARCH)	&& dum_payload.data[0] ==0)
-                                      {
-                                                      memcpy(m_radio_chan_tab, &dum_payload.data[1], RADIO_CHAN_TAB_SIZE);
-                                      }
-                                      else if (rx_state == RADIO_PERIPH_OPERATE)
-                                      {
-                                              periph_sw_counter = dum_payload.data[0];									
-                                        if (periph_sw_counter >0)  
-                                              {	
-                                                      update_ch_tab_flag = true;	
-                                                      memcpy(next_radio_chan_tab, &dum_payload.data[1], RADIO_CHAN_TAB_SIZE);
-                                              }
-                                              else
-                                              {
-                                                      memcpy(m_radio_chan_tab, &dum_payload.data[1], RADIO_CHAN_TAB_SIZE);
-                                              }
-                                      }
-                              
-                                      esb_write_payload(&data_payload);
+				  //aFH: update channel switch counter and upload next channel tab
+				  if  ( (rx_state == RADIO_PERIPH_SEARCH)	&& dum_payload.data[0] ==0)
+				  {
+								  memcpy(m_radio_chan_tab, &dum_payload.data[1], RADIO_CHAN_TAB_SIZE);
+				  }
+				  else if (rx_state == RADIO_PERIPH_OPERATE)
+				  {
+						periph_sw_counter = dum_payload.data[0];									
+						if (periph_sw_counter >0)  
+						{	
+							  update_ch_tab_flag = true;	
+							  memcpy(next_radio_chan_tab, &dum_payload.data[1], RADIO_CHAN_TAB_SIZE);
+						}
+						else
+						{
+							  memcpy(m_radio_chan_tab, &dum_payload.data[1], RADIO_CHAN_TAB_SIZE);
+						}
+				  }
+		  
+				  esb_write_payload(&data_payload);
 
-                                      m_event_callback(RADIO_PERIPH_DATA_SENT);
+				  m_event_callback(RADIO_PERIPH_DATA_SENT);
 				}
 				
                 
@@ -455,23 +552,23 @@ static void radio_hfclk_start( void )
 
 static void dbg_pins_init(void)
 {
-        int err;
+	int err;
         
-        dbg_port = device_get_binding(DT_LABEL(DT_NODELABEL(gpio0)));
+	dbg_port = device_get_binding(DT_LABEL(DT_NODELABEL(gpio0)));
 	if (!dbg_port) {
 		LOG_ERR("Could not bind to radio debug port");
-         }
+	 }
 
-         for (size_t i = 0; i < ARRAY_SIZE(dbg_pins); i++) {
-			err = gpio_pin_configure(dbg_port, dbg_pins[i],
-					GPIO_OUTPUT);
-			if (err) {
-					LOG_ERR("Unable to configure radio debug port");
-					dbg_port = NULL;
-				}
-                      		
-                        gpio_pin_set(dbg_port, dbg_pins[i], 0); 
-         }
+	 for (size_t i = 0; i < ARRAY_SIZE(dbg_pins); i++) {
+		err = gpio_pin_configure(dbg_port, dbg_pins[i],
+				GPIO_OUTPUT);
+		if (err) {
+				LOG_ERR("Unable to configure radio debug port");
+				dbg_port = NULL;
+			}
+						
+					gpio_pin_set(dbg_port, dbg_pins[i], 0); 
+	 }
 }
 
 
@@ -481,16 +578,12 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 {
 	int err;
 	
-	uint8_t addr_prefix[] = {0, 1};
+	uint8_t i;
+	
+	uint8_t addr_prefix[] = {1};
 	
 	m_event_callback = event_callback;
 	
-	//aFH
-	//Fill in the radio channel tables
-	memcpy(m_radio_chan_tab, radio_table, RADIO_CHAN_TAB_SIZE); 
-	memcpy(unused_radio_table, &radio_table[RADIO_CHAN_TAB_SIZE], RADIO_UNUSED_CHAN_TAB_SIZE);
-	memcpy(next_radio_chan_tab, m_radio_chan_tab, RADIO_CHAN_TAB_SIZE); 
-		
 	struct esb_config config        = ESB_DEFAULT_CONFIG;
 	
 	config.protocol                 = ESB_PROTOCOL_ESB_DPL;
@@ -498,7 +591,7 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 	config.event_handler            = (is_central)?nrf_esb_ptx_event_handler:nrf_esb_prx_event_handler;
 	config.mode                     = (is_central)?ESB_MODE_PTX:ESB_MODE_PRX;
 	config.selective_auto_ack       = false;
-	config.tx_output_power          =  tx_power;
+	config.tx_output_power          = tx_power;
 	config.retransmit_count         = RETRAN_CNT;
 	config.tx_mode					= ESB_TXMODE_MANUAL;  //JS Modify: 1/20/2021 , Use manual tx start
 	config.retransmit_delay         = 600;
@@ -540,8 +633,34 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 
 	radio_hfclk_start();
 
-        dbg_pins_init();
-		
+	dbg_pins_init();
+	
+
+	//aFH
+	//Fill in the radio channel tables
+
+	for (i=0; i< TOTAL_CHAN_TAB_SIZE ; i++)
+		{
+			 radio_table[i][0] =  radio_ch_tab[i] ;
+			 radio_table[i][1] = 0xFF;
+		}
+	
+	
+	radio_scan_sort_all_channels_rssi();
+			
+	for (i=0; i< RADIO_CHAN_TAB_SIZE; i++)
+	{
+		m_radio_chan_tab[i] = radio_table[i][0];
+	}
+
+	memcpy(next_radio_chan_tab, m_radio_chan_tab, RADIO_CHAN_TAB_SIZE); 
+	
+	for (i=0; i< RADIO_UNUSED_CHAN_TAB_SIZE ; i++)
+	{
+		 unused_radio_table[i] = radio_table[RADIO_CHAN_TAB_SIZE+i][0];
+	}
+
+	
 	return 0;
 }
 

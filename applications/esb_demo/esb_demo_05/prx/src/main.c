@@ -24,7 +24,7 @@ LOG_MODULE_REGISTER(esb_prx, CONFIG_APP_LOG_LEVEL);
 
 static const struct device *led_port;
 
-#define PERIPH_NUM   1//1..2
+#define PERIPH_NUM   2//1..2
 
 #define	PAYLOAD_SIZE	64  //bytes
 
