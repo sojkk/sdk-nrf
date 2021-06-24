@@ -47,4 +47,4 @@ if(("${BOARD}" STREQUAL "lpcxpresso54114_m4"))
 endif()
 
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(app PRIVATE lib)
+target_include_directories(app PRIVATE ../lib)

@@ -16,7 +16,7 @@
 
 #include <ipc/rpmsg_service.h>
 
-#include "esb_ipc.h"
+#include "radio_ipc.h"
 
 #define APP_TASK_STACK_SIZE (1024)
 
@@ -38,8 +38,6 @@ static const uint8_t  led_pins[] = {DT_GPIO_PIN(DT_ALIAS(led0), gpios),
 
 static const struct device *led_port;
 
-static struct k_timer tx_timer_id;
-
 static uint8_t message = 0;
 
 static ipc_msg_t tx_cmd;
@@ -54,6 +52,7 @@ static int ep_id;
 struct rpmsg_endpoint my_ept;
 struct rpmsg_endpoint *ep = &my_ept;
 
+static rcv_data_buf[65];
 
 
 static int gpios_init(void)
@@ -110,7 +109,7 @@ static void leds_update(uint8_t value)
 
 
 
-int endpoint_cb(struct rpmsg_endpoint *ept, void *data,
+int rpmsg_endpoint_cb(struct rpmsg_endpoint *ept, void *data,
 		size_t len, uint32_t src, void *priv)
 {
 	memcpy (&rx_evt, data, sizeof(rx_evt));
@@ -130,44 +129,54 @@ static void receive_message(void)
 	
 	switch (rx_evt.data_hdr)
 	{
-		case ESB_INITIALIZE:
+		case RADIO_INITIALIZE:
 		
 			if ( (err= rx_evt.data[0]) !=0)	//error occurs
 			{
-				printk("esb initialize error %d\n", err);
-				k_timer_stop(&tx_timer_id);
+				printk("CPUAPP: radio initialize error %d\n", err);
 			}
 			else
 			{
 				application_state = APP_CFG;  //radio configured
-				printk("esb initialized\n");
+				send_message();
+				printk("CPUAPP: radio initialized\n");
 			}
 	
 			break;
-		
-		case WRITE_TX_PAYLOAD:
+			
+			
+			
+		case RADIO_START_TX_POLL:
 		
 			if ( (err= rx_evt.data[0]) !=0)	//error occurs
 			{
-				printk("esb write payload error %d\n", err);
+				printk("CPUAPP: radio start poll timer error %d\n", err);
 			}
+			else
+			{
+				printk("CPUAPP: radio poll started\n");
+				
+			}
+						
+			break;
+		
+		
+		case RADIO_CENTRAL_DATA_RECEIVED:
 			
+	
+				memcpy(rcv_data_buf, rx_evt.data, rx_evt.length);
+				
+				printk("CPUAPP: radio data fetched, periph_num = %d\n", rcv_data_buf[0] );
+				printk("data received :	%d, %d, %d, %d\n", rcv_data_buf[1],\
+						rcv_data_buf[2], rcv_data_buf[3], rcv_data_buf[4]);
+			
+			break;
+		
+		default:
+		
 			break;
 
-		case TX_SUCCESS:
-		
-			leds_update(message);
-			message++;
-			printk ("esb tx success\n");	
-			
-			break;
-			
-		case TX_FAILED:
-
-			printk ("esb tx failed\n");
-		
-			break;
-			
+				
 		
 	}
 	
@@ -178,35 +187,18 @@ static int send_message(uint8_t send_data)
 {
 	if (application_state == APP_IDLE)
 	{
-		tx_cmd.data_hdr		= ESB_INITIALIZE;
+		tx_cmd.data_hdr		= RADIO_INITIALIZE;
 		tx_cmd.data_len		= 1;
-		tx_cmd.data[0]		= CONFIG_PTX;
+		tx_cmd.data[0]		= CONFIG_CENTRAL;
 	}
 	else if (application_state == APP_CFG)	
 	{
-		tx_cmd.data_hdr		= WRITE_TX_PAYLOAD;
-		tx_cmd.data_len		= 2;
-		tx_cmd.data[0]		= 0;
-		tx_cmd.data[1]		= send_data;
+		tx_cmd.data_hdr		= RADIO_START_TX_POLL;
+		tx_cmd.data_len		= 1;
+		tx_cmd.data[0]		= POLL_TICKS;
 	}
-		
 	
 	return rpmsg_service_send(ep_id, &tx_cmd, sizeof(tx_cmd));
-}
-
-
-
-void tx_timer_handler(struct k_timer *dummy)
-{
-
-        int status =0;
-
-	status = send_message(message);
-	if (status < 0) {
-		printk("send_message failed with status %d\n", status);		   		
-	}
-
-	
 }
 
 
@@ -218,7 +210,7 @@ void app_task(void *arg1, void *arg2, void *arg3)
 	ARG_UNUSED(arg3);
 	
 
-	printk("\r\nRPMsg Service [master] demo started\r\n");
+	printk("\r\nRPMsg Service ptx-app started\r\n");
 
 	/* Since we are using name service, we need to wait for a response
 	 * from NS setup and than we need to process it
@@ -226,14 +218,16 @@ void app_task(void *arg1, void *arg2, void *arg3)
 	while (!rpmsg_service_endpoint_is_bound(ep_id)) {
 		k_sleep(K_MSEC(1));
 	}
-
-	k_timer_start(&tx_timer_id, TX_PERIOD, TX_PERIOD);
-	printk("k_timer started\n");
-	while (1) {
 		
-			receive_message();
-			
-		}
+	send_message();
+	
+
+	//k_timer_start(&tx_timer_id, TX_PERIOD, TX_PERIOD);
+	//printk("k_timer started\n");
+	while (1) {
+
+		receive_message();			
+	}
 		
 		
 }
@@ -244,16 +238,11 @@ void app_task(void *arg1, void *arg2, void *arg3)
 void main(void)
 {
 	gpios_init();
-	
-	k_timer_init(&tx_timer_id, tx_timer_handler, NULL);
-	
+
 	printk("Starting application thread!\n");
 	k_thread_create(&thread_data, thread_stack, APP_TASK_STACK_SIZE,
 			(k_thread_entry_t)app_task,
 			NULL, NULL, NULL, K_PRIO_COOP(7), 0, K_NO_WAIT);
-	
-	
-	
 
 	memset(&tx_cmd, 0, sizeof(tx_cmd));
 	memset(&rx_evt, 0, sizeof(rx_evt));
@@ -264,7 +253,7 @@ int register_endpoint(const struct device *arg)
 {
 	int status;
 
-	status = rpmsg_service_register_endpoint("demo", endpoint_cb);
+	status = rpmsg_service_register_endpoint("demo", rpmsg_endpoint_cb);
 
 	if (status < 0) {
 		printk("rpmsg_create_ept failed %d\n", status);

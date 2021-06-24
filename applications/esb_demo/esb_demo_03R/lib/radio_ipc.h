@@ -7,36 +7,34 @@
 
 
 #define INVALID_MODE	0xFF
-#define	CONFIG_PTX		1
-#define	CONFIG_PRX		2
+#define	CONFIG_CENTRAL		1
+#define	CONFIG_PERIPH		2
 
 typedef enum
 {
 	APP_IDLE,
 	APP_CFG,
+	APP_OPT
 	
 	
 }app_state_t;
 
 typedef enum
 {
-	ESB_INITIALIZE = 1,
-	WRITE_TX_PAYLOAD,
-	READ_RX_PAYLOAD,
-	START_TX,
-	START_RX,
-	STOP_RX,
-	TX_SUCCESS,
-	TX_FAILED,
-	RX_RECEIVED,
-	
+	RADIO_INITIALIZE = 1,
+	RADIO_START_TX_POLL,
+	RADIO_START_RX_SCAN,
+	RADIO_FETCH_PACKET,
+	RADIO_CENTRAL_DATA_RECEIVED,
+	RADIO_PERIPH_DATA_SENT
+
 }cmd_evt_t;
 
 typedef struct
 {
     cmd_evt_t 	data_hdr;
     uint8_t 	data_len;
-    uint8_t 	data[32];
+    uint8_t 	data[65];
     
 }ipc_msg_t;
 

@@ -28,6 +28,8 @@ project(rpmsg_service)
 enable_language(C ASM)
 
 target_sources(app PRIVATE src/main.c)
+target_sources(app PRIVATE ../lib/esb.c)
+target_sources(app PRIVATE ../lib/radio.c)
 
 include(ExternalProject)
 
@@ -47,4 +49,4 @@ if(("${BOARD}" STREQUAL "lpcxpresso54114_m4"))
 endif()
 
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(app PRIVATE lib)
+target_include_directories(app PRIVATE ../lib)

@@ -218,7 +218,7 @@ void app_task(void *arg1, void *arg2, void *arg3)
 	ARG_UNUSED(arg3);
 	
 
-	printk("\r\nRPMsg Service ptx-app started\r\n");
+	printk("\r\nRPMsg Service [master] demo started\r\n");
 
 	/* Since we are using name service, we need to wait for a response
 	 * from NS setup and than we need to process it
@@ -245,11 +245,7 @@ void main(void)
 {
 	gpios_init();
 	
-	k_timer_init(&tx_timer_id, tx_timer_handler, NULL);	
-	
-	radio_setup(true, RADIO_TX_POWER_0DBM, radio_evt_cb, 0);
-          
-	radio_poll_timer_start(POLL_TICKS);
+	k_timer_init(&tx_timer_id, tx_timer_handler, NULL);
 	
 	printk("Starting application thread!\n");
 	k_thread_create(&thread_data, thread_stack, APP_TASK_STACK_SIZE,
@@ -268,7 +264,7 @@ int register_endpoint(const struct device *arg)
 {
 	int status;
 
-	status = rpmsg_service_register_endpoint("ptx_app", rpmsg_endpoint_cb);
+	status = rpmsg_service_register_endpoint("demo", rpmsg_endpoint_cb);
 
 	if (status < 0) {
 		printk("rpmsg_create_ept failed %d\n", status);
