@@ -7,7 +7,7 @@
 #include <irq.h>
 #include <sys/byteorder.h>
 #include <nrf.h>
-#include <esb.h>
+#include "esb.h"
 #ifdef DPPI_PRESENT
 #include <nrfx_dppi.h>
 #else

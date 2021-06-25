@@ -40,16 +40,6 @@ static radio_data_t rx_buf;
 
 static int send_message(void);
 
-static void hfclk_start( void )
-{
-  //Start HFCLK
-    NRF_CLOCK->EVENTS_HFCLKSTARTED = 0;
-    NRF_CLOCK->TASKS_HFCLKSTART = 1;
-
-    while (NRF_CLOCK->EVENTS_HFCLKSTARTED == 0);
-}
-
-
 
 void radio_evt_cb(uint8_t radio_event)
 {
@@ -62,7 +52,7 @@ void radio_evt_cb(uint8_t radio_event)
 		radio_fetch_packet(&rx_buf);
 		
 
-		tx_event.data_hdr = RADIO_CENTRAL_DATA_RECEIVED;
+		tx_event.data_hdr = RADIO_CENTRAL_DATA_RCV;
 		tx_event.data_len = rx_buf.length;
 		tx_event.data[0]  = rx_buf.periph_num;
 		memcpy(&tx_event.data[1], rx_buf.data, rx_buf.length);
@@ -200,14 +190,25 @@ void app_task(void *arg1, void *arg2, void *arg3)
 
 
 
+void lf_clock_start(void)
+{
 
+    NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_LFXO;
+
+  //Start LFCLK
+    NRF_CLOCK->EVENTS_LFCLKSTARTED = 0;
+    NRF_CLOCK->TASKS_LFCLKSTART = 1;
+
+    while (NRF_CLOCK->EVENTS_LFCLKSTARTED == 0);
+
+}
 
 
 
 void main(void)
 {
 
-	hfclk_start();	
+	lf_clock_start();
 	
 	memset(&tx_event, 0, sizeof(tx_event));
 	memset(&rx_cmd, 0, sizeof(rx_cmd));

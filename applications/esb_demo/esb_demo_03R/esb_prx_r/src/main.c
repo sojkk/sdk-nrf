@@ -17,6 +17,7 @@
 #include <ipc/rpmsg_service.h>
 
 #include "radio_ipc.h"
+#include "radio_config.h"
 
 #define APP_TASK_STACK_SIZE (1024)
 
@@ -24,6 +25,20 @@
 
 #define LED_ON    0
 #define LED_OFF   1
+
+
+#define PERIPH_NUM   1//1..2
+
+#define	PAYLOAD_SIZE	64  //bytes
+
+uint8_t data_packet[] = {   1,  0,  3,  4,  5,  6,  7,  8,
+                            9, 10, 11, 12, 13, 14, 15, 16,
+                           17, 18, 19, 20, 21, 22, 23, 24,
+                           25, 26, 27, 28, 29, 30, 31, 32,
+                           33, 34, 35, 36, 37, 38, 39, 40,
+                           41, 42, 43, 44, 45, 46, 47, 48,
+                           49, 50, 51, 52, 53, 54, 55, 56,
+                           57, 58, 59, 60, 61, 62, 63, 64 };
 
 
 K_THREAD_STACK_DEFINE(thread_stack, APP_TASK_STACK_SIZE);
@@ -38,8 +53,6 @@ static const uint8_t  led_pins[] = {DT_GPIO_PIN(DT_ALIAS(led0), gpios),
 
 static const struct device *led_port;
 
-static uint8_t message = 0;
-
 static ipc_msg_t tx_cmd;
 
 static ipc_msg_t rx_evt;
@@ -49,10 +62,13 @@ static K_SEM_DEFINE(data_rx_sem, 0, 1);
 static app_state_t application_state = APP_IDLE;
 
 static int ep_id;
+
 struct rpmsg_endpoint my_ept;
+
 struct rpmsg_endpoint *ep = &my_ept;
 
-static rcv_data_buf[65];
+static uint8_t rcv_data_buf[65];
+
 
 
 static int gpios_init(void)
@@ -121,6 +137,26 @@ int rpmsg_endpoint_cb(struct rpmsg_endpoint *ept, void *data,
 
 
 
+static int send_message(void)
+{
+	if (application_state == APP_IDLE)
+	{
+		tx_cmd.data_hdr		= RADIO_INITIALIZE;
+		tx_cmd.data_len		= 1;
+		tx_cmd.data[0]		= CONFIG_PERIPH;
+	}
+	else if (application_state == APP_CFG)	
+	{
+		tx_cmd.data_hdr		= RADIO_START_RX_SCAN;
+		tx_cmd.data_len		= 0;
+	}
+	
+	return rpmsg_service_send(ep_id, &tx_cmd, sizeof(tx_cmd));
+}
+
+
+
+
 static void receive_message(void)
 {
 	int err ;
@@ -146,7 +182,7 @@ static void receive_message(void)
 			
 			
 			
-		case RADIO_START_TX_POLL:
+		case RADIO_START_RX_SCAN:
 		
 			if ( (err= rx_evt.data[0]) !=0)	//error occurs
 			{
@@ -161,14 +197,8 @@ static void receive_message(void)
 			break;
 		
 		
-		case RADIO_CENTRAL_DATA_RECEIVED:
+		case RADIO_PERIPH_DATA_SND:
 			
-	
-				memcpy(rcv_data_buf, rx_evt.data, rx_evt.length);
-				
-				printk("CPUAPP: radio data fetched, periph_num = %d\n", rcv_data_buf[0] );
-				printk("data received :	%d, %d, %d, %d\n", rcv_data_buf[1],\
-						rcv_data_buf[2], rcv_data_buf[3], rcv_data_buf[4]);
 			
 			break;
 		
@@ -183,23 +213,6 @@ static void receive_message(void)
 	
 }
 
-static int send_message(uint8_t send_data)
-{
-	if (application_state == APP_IDLE)
-	{
-		tx_cmd.data_hdr		= RADIO_INITIALIZE;
-		tx_cmd.data_len		= 1;
-		tx_cmd.data[0]		= CONFIG_CENTRAL;
-	}
-	else if (application_state == APP_CFG)	
-	{
-		tx_cmd.data_hdr		= RADIO_START_TX_POLL;
-		tx_cmd.data_len		= 1;
-		tx_cmd.data[0]		= POLL_TICKS;
-	}
-	
-	return rpmsg_service_send(ep_id, &tx_cmd, sizeof(tx_cmd));
-}
 
 
 
@@ -221,9 +234,6 @@ void app_task(void *arg1, void *arg2, void *arg3)
 		
 	send_message();
 	
-
-	//k_timer_start(&tx_timer_id, TX_PERIOD, TX_PERIOD);
-	//printk("k_timer started\n");
 	while (1) {
 
 		receive_message();			

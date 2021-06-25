@@ -28,8 +28,6 @@ project(rpmsg_service)
 enable_language(C ASM)
 
 target_sources(app PRIVATE src/main.c)
-target_sources(app PRIVATE ../lib/esb.c)
-target_sources(app PRIVATE ../lib/radio.c)
 
 include(ExternalProject)
 
