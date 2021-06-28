@@ -190,11 +190,11 @@ static void receive_message(void)
 				memcpy(rcv_data_buf, rx_evt.data, rx_evt.data_len);
 
                                 leds_update(rcv_data_buf[2]);
-				
+				/*
 				printk("CPUAPP: radio data fetched, periph_num = %d\n", rcv_data_buf[0] );
 				printk("data received :	%d, %d, %d, %d\n", rcv_data_buf[1],\
 						rcv_data_buf[2], rcv_data_buf[3], rcv_data_buf[4]);
-			
+				*/
 			break;
 		
 		default:
