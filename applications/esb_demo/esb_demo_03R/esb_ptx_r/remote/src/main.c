@@ -5,132 +5,97 @@
  */
 
 #include <zephyr.h>
+#include <zephyr/types.h>
+
 #include <drivers/ipm.h>
 #include <sys/printk.h>
 #include <device.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <init.h>
-#include <drivers/gpio.h>
+
+#include <nrf.h>
+#include "esb.h"
+#include "radio.h"
 
 #include <ipc/rpmsg_service.h>
 
 #include "radio_ipc.h"
-#include "radio_config.h"
 
 #define APP_TASK_STACK_SIZE (1024)
-
-#define TX_PERIOD		K_MSEC(200)
-
-#define LED_ON    0
-#define LED_OFF   1
-
-
-#define PERIPH_NUM   1//1..2
-
-#define	PAYLOAD_SIZE	64  //bytes
-
-uint8_t data_packet[] = {   1,  0,  3,  4,  5,  6,  7,  8,
-                            9, 10, 11, 12, 13, 14, 15, 16,
-                           17, 18, 19, 20, 21, 22, 23, 24,
-                           25, 26, 27, 28, 29, 30, 31, 32,
-                           33, 34, 35, 36, 37, 38, 39, 40,
-                           41, 42, 43, 44, 45, 46, 47, 48,
-                           49, 50, 51, 52, 53, 54, 55, 56,
-                           57, 58, 59, 60, 61, 62, 63, 64 };
-
-
-
 K_THREAD_STACK_DEFINE(thread_stack, APP_TASK_STACK_SIZE);
 static struct k_thread thread_data;
 
+static ipc_msg_t tx_event;
 
-static const uint8_t  led_pins[] = {DT_GPIO_PIN(DT_ALIAS(led0), gpios),
-                                    DT_GPIO_PIN(DT_ALIAS(led1), gpios),
-                                    DT_GPIO_PIN(DT_ALIAS(led2), gpios),
-                                    DT_GPIO_PIN(DT_ALIAS(led3), gpios)};
-
-
-static const struct device *led_port;
-
-static ipc_msg_t tx_cmd;
-
-static ipc_msg_t rx_evt;
+static ipc_msg_t rx_cmd;
 
 static K_SEM_DEFINE(data_rx_sem, 0, 1);
 
-static app_state_t application_state = APP_IDLE;
-
 static int ep_id;
 
-struct rpmsg_endpoint my_ept;
 
-struct rpmsg_endpoint *ep = &my_ept;
-
-static uint8_t data_buf[65];
+static radio_data_t rx_buf;
 
 
+static int send_message(void);
 
-static int gpios_init(void)
+
+void radio_evt_cb(uint8_t radio_event)
 {
-	int err;
 	
-	led_port = device_get_binding(DT_LABEL(DT_NODELABEL(gpio0)));
-	if (!led_port) {
-		printk("Could not bind to LED port %s",
-			DT_LABEL(DT_NODELABEL(gpio0)));
-		return -EIO;
-	}
+	int status = 0;
 
-	for (size_t i = 0; i < ARRAY_SIZE(led_pins); i++) {
-                err = gpio_pin_configure(led_port, led_pins[i],
-                                GPIO_OUTPUT);
-                if (err) {
-                                printk("Unable to configure LED%u, err %d", i, err);
-                                led_port = NULL;
-                                return err;
-                        }
-                        
-                gpio_pin_set(led_port, led_pins[i], 1); 
+	if(radio_event==RADIO_CENTRAL_DATA_RECEIVED)
+	{
+		
+		radio_fetch_packet(&rx_buf);
+		
+
+		tx_event.data_hdr = RADIO_CENTRAL_DATA_RCV;
+		tx_event.data_len = rx_buf.length;
+		tx_event.data[0]  = rx_buf.periph_num;
+		memcpy(&tx_event.data[1], rx_buf.data, rx_buf.length);
+						
+		status = send_message();
+				
+        if (status < 0) {
+
+            printk("esb_event_handler: send_message failed with status %d\n", status);
+
+        }
+
 	}
 	
-	return 0;
-	
-}
+	else if(radio_event == RADIO_PERIPH_DATA_SENT)
+	{
+			
+	   tx_event.data_hdr = RADIO_PERIPH_DATA_SND; 		
+	   tx_event.data_len = 1;
+	   tx_event.data[0]  = 0;		
+		
+		status = send_message();
+				
+        if (status < 0) {
 
+            printk("esb_event_handler: send_message failed with status %d\n", status);
 
-static void leds_update(uint8_t value)
-{
-	bool led0_status = !(value % 8 > 0 && value % 8 <= 4);
-	bool led1_status = !(value % 8 > 1 && value % 8 <= 5);
-	bool led2_status = !(value % 8 > 2 && value % 8 <= 6);
-	bool led3_status = !(value % 8 > 3);
+        }
 
-	gpio_port_pins_t mask =
-		1 << led_pins[0] |
-		1 << led_pins[1] |
-		1 << led_pins[2] |
-		1 << led_pins[3];
-
-	gpio_port_value_t val =
-		led0_status << led_pins[0] |
-		led1_status << led_pins[1] |
-		led2_status << led_pins[2] |
-		led3_status << led_pins[3];
-
-	if (led_port != NULL) {
-		(void)gpio_port_set_masked_raw(led_port, mask, val);
+		   
 	}
+	
+	
+
 }
 
 
 
-int rpmsg_endpoint_cb(struct rpmsg_endpoint *ept, void *data,
+int endpoint_cb(struct rpmsg_endpoint *ept, void *data,
 		size_t len, uint32_t src, void *priv)
 {
-	memcpy (&rx_evt, data, sizeof(rx_evt));
-	
+	memcpy (&rx_cmd, data, sizeof(rx_cmd));
+
 	k_sem_give(&data_rx_sem);
 
 	return RPMSG_SUCCESS;
@@ -138,105 +103,96 @@ int rpmsg_endpoint_cb(struct rpmsg_endpoint *ept, void *data,
 
 
 
-static int send_message(void)
-{
-	if (application_state == APP_IDLE)
-	{
-		tx_cmd.data_hdr		= RADIO_INITIALIZE;
-		tx_cmd.data_len		= 2;
-		tx_cmd.data[0]		= CONFIG_PERIPH;
-		tx_cmd.data[1]		= PERIPH_NUM;
-	}
-	else if (application_state == APP_CFG)	
-	{
-		tx_cmd.data_hdr		= RADIO_START_RX_SCAN;
-		tx_cmd.data_len		= 1;
-		tx_cmd.data[0]		= 0;
-	}
-	else if (application_state == APP_OPT)
-	{
-		// Set LEDs identical to the ones on the PTX.
-        leds_update(data_buf[2]);
-
-        data_buf[2]++;
-		
-		tx_cmd.data_hdr		= RADIO_PUT_PACKET;
-		tx_cmd.data_len		= PAYLOAD_SIZE;
-		memcpy(tx_cmd.data , data_buf, sizeof(data_buf));
-		
-	}
-	
-	return rpmsg_service_send(ep_id, &tx_cmd, sizeof(tx_cmd));
-}
-
-
-
 
 static void receive_message(void)
 {
-	int err ;
+	int err =0 ;
+	struct esb_payload payload_buffer;
 	
+	payload_buffer.pipe		= 0;
+	payload_buffer.noack	= false;
+
 	k_sem_take(&data_rx_sem, K_FOREVER);
-	
-	switch (rx_evt.data_hdr)
+
+	switch (rx_cmd.data_hdr)		
 	{
-		case RADIO_INITIALIZE:
 		
-			if ( (err= rx_evt.data[0]) !=0)	//error occurs
+		case RADIO_INITIALIZE:
+					
+			tx_event.data_hdr	= RADIO_INITIALIZE;
+			tx_event.data_len	= 1;
+			
+			if(rx_cmd.data[0] == CONFIG_CENTRAL)
+			{	
+				err = radio_setup(true, RADIO_TX_POWER_0DBM, radio_evt_cb, 0);
+				tx_event.data[0]	= (uint8_t) (256-err);
+			}
+			else if (rx_cmd.data[0] == CONFIG_PERIPH)
 			{
-				printk("CPUAPP: radio initialize error %d\n", err);
+				err = radio_setup(false, RADIO_TX_POWER_0DBM, radio_evt_cb, rx_cmd.data[1]);
+				tx_event.data[0]	= (uint8_t) (256-err);
+				 printk("CPUNET: radio_setup config periph\n");	
 			}
 			else
 			{
-				application_state = APP_CFG;  //radio configured
-				send_message();
-				printk("CPUAPP: radio initialized\n");
+				tx_event.data[0]	= INVALID_MODE;
+				
 			}
-	
+		
+			if (err!=0) {
+				printk("CPUNET: Radio initialization failed, err %d\n", (uint8_t) err);
+				return;
+			}
+			
+			
 			break;
+		
+		case RADIO_START_TX_POLL:			
+				
+			tx_event.data_hdr	= RADIO_START_TX_POLL;
+			tx_event.data_len	= 1;
 			
+			radio_poll_timer_start(rx_cmd.data[0]);
+			 
+			tx_event.data[0]=0;
 			
+			break;
 			
 		case RADIO_START_RX_SCAN:
-		
-			if ( (err= rx_evt.data[0]) !=0)	//error occurs
-			{
-				printk("CPUAPP: radio start poll timer error %d\n", err);
-			}
-			else
-			{
-				printk("CPUAPP: radio poll started\n");
-				
-			}
-						
-			break;
-		
-		
-		case RADIO_PERIPH_DATA_SND:
-			if ( (err= rx_evt.data[0]) !=0)	//error occurs
-			{
-				printk("CPUAPP: radio peripheral data sent error %d\n", err);
-			}
-			else
-			{
-				application_state = APP_OPT; // ready for data sent
-				send_message();
-				printk("CPUAPP: Ready for data sent\n");
-			}
-			
-			break;
-		
-		default:
-		
-			break;
 
-				
+			tx_event.data_hdr	= RADIO_START_RX_SCAN;
+			tx_event.data_len	= 1;
+			
+			radio_scan_for_poll();
+			 
+			tx_event.data[0]=0;
+			printk("CPUNET: radio start receiver scan\n"); 
+			break;
 		
-	}
-	
-	
+		case RADIO_PUT_PACKET:
+		
+			rx_buf.length = rx_cmd.data_len;
+			rx_buf.periph_num = rx_cmd.data[0];
+			memcpy(rx_buf.data, &rx_cmd.data[1], rx_cmd.data_len);			
+		
+			radio_put_packet(&rx_buf);
+		
+		default :
+		
+		
+			break;
+		
+			
+			
+		}
+
 }
 
+
+static int send_message(void)
+{
+	return rpmsg_service_send(ep_id, &tx_event, sizeof(tx_event));
+}
 
 
 
@@ -246,47 +202,63 @@ void app_task(void *arg1, void *arg2, void *arg3)
 	ARG_UNUSED(arg2);
 	ARG_UNUSED(arg3);
 	
+	int status = 0;
 
-	printk("\r\nRPMsg Service ptx-app started\r\n");
+     
+	printk("\r\nRPMsg Service [remote] started\r\n");
 
-	/* Since we are using name service, we need to wait for a response
-	 * from NS setup and than we need to process it
-	 */
-	while (!rpmsg_service_endpoint_is_bound(ep_id)) {
-		k_sleep(K_MSEC(1));
+
+	while(1) {
+		
+		
+		receive_message();
+		
+		
+		status = send_message();
+				
+		if (status < 0) {
+			printk("send_message failed with status %d\n",
+			       status);
+			break;
+		}
+
+		
 	}
-		
-	send_message();
-	
-	while (1) {
 
-		receive_message();			
-	}
-		
-		
+
 }
-	
 
-void data_init(void)
+
+
+void lf_clock_start(void)
 {
-	data_buf[0] = PERIPH_NUM;
-        memcpy( &data_buf[1],  data_packet, sizeof(data_packet) );
-}	
-	
+
+    NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_LFXO;
+
+  //Start LFCLK
+    NRF_CLOCK->EVENTS_LFCLKSTARTED = 0;
+    NRF_CLOCK->TASKS_LFCLKSTART = 1;
+
+    while (NRF_CLOCK->EVENTS_LFCLKSTARTED == 0);
+
+}
+
+
 
 void main(void)
 {
-	gpios_init();
 
-	data_init();
-
+	lf_clock_start();
+	
+	memset(&tx_event, 0, sizeof(tx_event));
+	memset(&rx_cmd, 0, sizeof(rx_cmd));
+	
 	printk("Starting application thread!\n");
 	k_thread_create(&thread_data, thread_stack, APP_TASK_STACK_SIZE,
 			(k_thread_entry_t)app_task,
 			NULL, NULL, NULL, K_PRIO_COOP(7), 0, K_NO_WAIT);
 
-	memset(&tx_cmd, 0, sizeof(tx_cmd));
-	memset(&rx_evt, 0, sizeof(rx_evt));
+
 }
 
 /* Make sure we register endpoint before RPMsg Service is initialized. */
@@ -294,7 +266,7 @@ int register_endpoint(const struct device *arg)
 {
 	int status;
 
-	status = rpmsg_service_register_endpoint("demo", rpmsg_endpoint_cb);
+	status = rpmsg_service_register_endpoint("demo", endpoint_cb);
 
 	if (status < 0) {
 		printk("rpmsg_create_ept failed %d\n", status);
