@@ -18,5 +18,10 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(rpmsg_service_remote)
 
 target_sources(app PRIVATE src/main.c)
+target_sources(app PRIVATE src/main.c)
+target_sources(app PRIVATE ../../lib/esb.c)
+target_sources(app PRIVATE ../../lib/radio.c)
+
+
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_include_directories(app PRIVATE ../../lib)

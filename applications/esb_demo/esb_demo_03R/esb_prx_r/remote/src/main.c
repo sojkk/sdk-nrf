@@ -15,11 +15,12 @@
 #include <string.h>
 
 #include <nrf.h>
-#include <esb.h>
+#include "esb.h"
+#include "radio.h"
 
 #include <ipc/rpmsg_service.h>
 
-#include "esb_ipc.h"
+#include "radio_ipc.h"
 
 #define APP_TASK_STACK_SIZE (1024)
 K_THREAD_STACK_DEFINE(thread_stack, APP_TASK_STACK_SIZE);
@@ -33,101 +34,61 @@ static K_SEM_DEFINE(data_rx_sem, 0, 1);
 
 static int ep_id;
 
+
+static radio_data_t rx_buf;
+
+
 static int send_message(void);
 
-static void hfclk_start( void )
-{
-  //Start HFCLK
-    NRF_CLOCK->EVENTS_HFCLKSTARTED = 0;
-    NRF_CLOCK->TASKS_HFCLKSTART = 1;
 
-    while (NRF_CLOCK->EVENTS_HFCLKSTARTED == 0);
-}
-
-
-
-void radio_event_handler(struct esb_evt const *event)
+void radio_evt_cb(uint8_t radio_event)
 {
 	
 	int status = 0;
 
-	switch (event->evt_id) {
-		case ESB_EVENT_TX_SUCCESS:
+	if(radio_event==RADIO_CENTRAL_DATA_RECEIVED)
+	{
 		
-			tx_event.data_hdr = TX_SUCCESS;
-			
-			break;
-		case ESB_EVENT_TX_FAILED:
-			
-			esb_flush_tx();  //Flush TX_FIFO
-			tx_event.data_hdr = TX_FAILED;
-			
-			break;
-		case ESB_EVENT_RX_RECEIVED:
+		radio_fetch_packet(&rx_buf);
 		
-		
-			tx_event.data_hdr = RX_RECEIVED;
-					
-			break;
-			
-		default:
-		
-			break;
-	}
-	
-	status = send_message();
+
+		tx_event.data_hdr = RADIO_CENTRAL_DATA_RCV;
+		tx_event.data_len = rx_buf.length;
+		tx_event.data[0]  = rx_buf.periph_num;
+		memcpy(&tx_event.data[1], rx_buf.data, rx_buf.length);
+						
+		status = send_message();
 				
         if (status < 0) {
 
-            printk("esb_event_hadler send_message failed with status %d\n", status);
+            printk("esb_event_handler: send_message failed with status %d\n", status);
 
         }
 
+	}
 	
+	else if(radio_event == RADIO_PERIPH_DATA_SENT)
+	{
+			
+	   tx_event.data_hdr = RADIO_PERIPH_DATA_SND; 		
+	   tx_event.data_len = 1;
+	   tx_event.data[0]  = 0;		
+		
+		status = send_message();
+				
+        if (status < 0) {
+
+            printk("esb_event_handler: send_message failed with status %d\n", status);
+
+        }
+
+		   
+	}
+	
+	
+
 }
 
-static int esb_initialize(bool is_ptx)
-{
-	int err;
-	/* These are arbitrary default addresses. In end user products
-	 * different addresses should be used for each set of devices.
-	 */
-	uint8_t base_addr_0[4] = {0xE7, 0xE7, 0xE7, 0xE7};
-	uint8_t base_addr_1[4] = {0xC2, 0xC2, 0xC2, 0xC2};
-	uint8_t addr_prefix[8] = {0xE7, 0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8};
-
-	struct esb_config config = ESB_DEFAULT_CONFIG;
-
-	config.protocol = ESB_PROTOCOL_ESB_DPL;
-	config.retransmit_delay = 600;
-	config.bitrate = ESB_BITRATE_2MBPS;
-	config.event_handler = radio_event_handler;
-	config.mode = (is_ptx)? ESB_MODE_PTX:ESB_MODE_PRX;
-	config.selective_auto_ack = true;
-
-	err = esb_init(&config);
-
-	if (err) {
-		return err;
-	}
-
-	err = esb_set_base_address_0(base_addr_0);
-	if (err) {
-		return err;
-	}
-
-	err = esb_set_base_address_1(base_addr_1);
-	if (err) {
-		return err;
-	}
-
-	err = esb_set_prefixes(addr_prefix, ARRAY_SIZE(addr_prefix));
-	if (err) {
-		return err;
-	}
-
-	return 0;
-}
 
 
 int endpoint_cb(struct rpmsg_endpoint *ept, void *data,
@@ -156,20 +117,21 @@ static void receive_message(void)
 	switch (rx_cmd.data_hdr)		
 	{
 		
-		case ESB_INITIALIZE:
+		case RADIO_INITIALIZE:
 					
-			tx_event.data_hdr	= ESB_INITIALIZE;
-			tx_event.data_len	= 0;
+			tx_event.data_hdr	= RADIO_INITIALIZE;
+			tx_event.data_len	= 1;
 			
-			if(rx_cmd.data[0] == CONFIG_PTX)
+			if(rx_cmd.data[0] == CONFIG_CENTRAL)
 			{	
-				err = esb_initialize(true);
+				err = radio_setup(true, RADIO_TX_POWER_0DBM, radio_evt_cb, 0);
 				tx_event.data[0]	= (uint8_t) (256-err);
 			}
-			else if (rx_cmd.data[0] == CONFIG_PRX)
+			else if (rx_cmd.data[0] == CONFIG_PERIPH)
 			{
-				err = esb_initialize(false);
+				err = radio_setup(false, RADIO_TX_POWER_0DBM, radio_evt_cb, rx_cmd.data[1]);
 				tx_event.data[0]	= (uint8_t) (256-err);
+				 printk("CPUNET: radio_setup config periph\n");	
 			}
 			else
 			{
@@ -178,64 +140,42 @@ static void receive_message(void)
 			}
 		
 			if (err!=0) {
-				printk("ESB initialization failed, err %d\n", (uint8_t) err);
+				printk("CPUNET: Radio initialization failed, err %d\n", (uint8_t) err);
 				return;
 			}
 			
 			
 			break;
 		
-		case WRITE_TX_PAYLOAD:			
+		case RADIO_START_TX_POLL:			
 				
-			payload_buffer.length	= rx_cmd.data_len;
-			memcpy(&payload_buffer.data[0], &rx_cmd.data[0], payload_buffer.length);
+			tx_event.data_hdr	= RADIO_START_TX_POLL;
+			tx_event.data_len	= 1;
 			
-			err = esb_write_payload(&payload_buffer);
-			tx_event.data_hdr	= WRITE_TX_PAYLOAD;
-			tx_event.data_len	= 0;
-			tx_event.data[0]	= (uint8_t) (256-err);
-				
-		
-			break;
-			
-		case READ_RX_PAYLOAD:
-			
-			err = esb_read_rx_payload(&payload_buffer);
-			tx_event.data_hdr	= READ_RX_PAYLOAD;
-			
-			if (err==0)
-			{				
-				tx_event.data_len	= payload_buffer.length;
-				memcpy(&tx_event.data[0], &payload_buffer.data[0], payload_buffer.length);
-			} 
-			else
-			{
-				tx_event.data_len	= 0;
-				tx_event.data[0]	= (uint8_t) (256-err);			
-			}
+			radio_poll_timer_start(rx_cmd.data[0]);
+			 
+			tx_event.data[0]=0;
 			
 			break;
-		
-		case START_RX:
-		
-			err = esb_start_rx();
 			
-			tx_event.data_hdr	= START_RX;
-			tx_event.data_len	= 0;
-			tx_event.data[0]	= (uint8_t) (256-err);
-		
+		case RADIO_START_RX_SCAN:
+
+			tx_event.data_hdr	= RADIO_START_RX_SCAN;
+			tx_event.data_len	= 1;
+			
+			radio_scan_for_poll();
+			 
+			tx_event.data[0]=0;
+			printk("CPUNET: radio start receiver scan\n"); 
 			break;
 		
+		case RADIO_PUT_PACKET:
 		
-		case STOP_RX:
+			rx_buf.length = rx_cmd.data_len;
+			rx_buf.periph_num = rx_cmd.data[0];
+			memcpy(rx_buf.data, &rx_cmd.data[1], rx_cmd.data_len);			
 		
-			err = esb_stop_rx();
-			
-			tx_event.data_hdr	= START_RX;
-			tx_event.data_len	= 0;
-			tx_event.data[0]	= (uint8_t) (256-err);
-			
-			break;
+			radio_put_packet(&rx_buf);
 		
 		default :
 		
@@ -290,11 +230,25 @@ void app_task(void *arg1, void *arg2, void *arg3)
 
 
 
+void lf_clock_start(void)
+{
+
+    NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_LFRC;
+
+  //Start LFCLK
+    NRF_CLOCK->EVENTS_LFCLKSTARTED = 0;
+    NRF_CLOCK->TASKS_LFCLKSTART = 1;
+
+    while (NRF_CLOCK->EVENTS_LFCLKSTARTED == 0);
+
+}
+
+
 
 void main(void)
 {
 
-	hfclk_start();	
+	lf_clock_start();
 	
 	memset(&tx_event, 0, sizeof(tx_event));
 	memset(&rx_cmd, 0, sizeof(rx_cmd));

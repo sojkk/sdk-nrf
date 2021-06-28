@@ -152,7 +152,7 @@ void main(void)
 
         radio_setup(false, RADIO_TX_POWER_0DBM, radio_evt_cb, PERIPH_NUM);
 
-        radio_put_packet(&data_send);
+       // radio_put_packet(&data_send);
 	
         radio_scan_for_poll();
 

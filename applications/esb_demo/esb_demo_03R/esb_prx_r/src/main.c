@@ -41,6 +41,7 @@ uint8_t data_packet[] = {   1,  0,  3,  4,  5,  6,  7,  8,
                            57, 58, 59, 60, 61, 62, 63, 64 };
 
 
+
 K_THREAD_STACK_DEFINE(thread_stack, APP_TASK_STACK_SIZE);
 static struct k_thread thread_data;
 
@@ -67,7 +68,7 @@ struct rpmsg_endpoint my_ept;
 
 struct rpmsg_endpoint *ep = &my_ept;
 
-static uint8_t rcv_data_buf[65];
+static uint8_t data_buf[65];
 
 
 
@@ -142,13 +143,27 @@ static int send_message(void)
 	if (application_state == APP_IDLE)
 	{
 		tx_cmd.data_hdr		= RADIO_INITIALIZE;
-		tx_cmd.data_len		= 1;
+		tx_cmd.data_len		= 2;
 		tx_cmd.data[0]		= CONFIG_PERIPH;
+		tx_cmd.data[1]		= PERIPH_NUM;
 	}
 	else if (application_state == APP_CFG)	
 	{
 		tx_cmd.data_hdr		= RADIO_START_RX_SCAN;
-		tx_cmd.data_len		= 0;
+		tx_cmd.data_len		= 1;
+		tx_cmd.data[0]		= 0;
+	}
+	else if (application_state == APP_OPT)
+	{
+		// Set LEDs identical to the ones on the PTX.
+        leds_update(data_buf[2]);
+
+        data_buf[2]++;
+		
+		tx_cmd.data_hdr		= RADIO_PUT_PACKET;
+		tx_cmd.data_len		= PAYLOAD_SIZE;
+		memcpy(tx_cmd.data , data_buf, sizeof(data_buf));
+		
 	}
 	
 	return rpmsg_service_send(ep_id, &tx_cmd, sizeof(tx_cmd));
@@ -198,7 +213,16 @@ static void receive_message(void)
 		
 		
 		case RADIO_PERIPH_DATA_SND:
-			
+			if ( (err= rx_evt.data[0]) !=0)	//error occurs
+			{
+				printk("CPUAPP: radio peripheral data sent error %d\n", err);
+			}
+			else
+			{
+				application_state = APP_OPT; // ready for data sent
+				send_message();
+				printk("CPUAPP: Ready for data sent\n");
+			}
 			
 			break;
 		
@@ -242,12 +266,19 @@ void app_task(void *arg1, void *arg2, void *arg3)
 		
 }
 	
-	
+
+void data_init(void)
+{
+	data_buf[0] = PERIPH_NUM;
+        memcpy( &data_buf[1],  data_packet, sizeof(data_packet) );
+}	
 	
 
 void main(void)
 {
 	gpios_init();
+
+	data_init();
 
 	printk("Starting application thread!\n");
 	k_thread_create(&thread_data, thread_stack, APP_TASK_STACK_SIZE,
