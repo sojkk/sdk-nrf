@@ -26,9 +26,9 @@
 K_THREAD_STACK_DEFINE(thread_stack, APP_TASK_STACK_SIZE);
 static struct k_thread thread_data;
 
-static ipc_msg_t tx_event;
+static ipc_evt_msg_t tx_event;
 
-static ipc_msg_t rx_cmd;
+static ipc_cmd_msg_t rx_cmd;
 
 static K_SEM_DEFINE(data_rx_sem, 0, 1);
 
@@ -52,7 +52,7 @@ void radio_evt_cb(uint8_t radio_event)
 		radio_fetch_packet(&rx_buf);
 		
 
-		tx_event.data_hdr = RADIO_CENTRAL_DATA_RCV;
+		tx_event.data_hdr = RADIO_CENTRAL_DATA_RCV_EVT;
 		tx_event.data_len = rx_buf.length;
 		tx_event.data[0]  = rx_buf.periph_num;
 		memcpy(&tx_event.data[1], rx_buf.data, rx_buf.length);
@@ -70,7 +70,7 @@ void radio_evt_cb(uint8_t radio_event)
 	else if(radio_event == RADIO_PERIPH_DATA_SENT)
 	{
 			
-	   tx_event.data_hdr = RADIO_PERIPH_DATA_SND; 		
+	   tx_event.data_hdr = RADIO_PERIPH_DATA_SND_EVT; 		
 	   tx_event.data_len = 1;
 	   tx_event.data[0]  = 0;		
 		
@@ -117,9 +117,9 @@ static void receive_message(void)
 	switch (rx_cmd.data_hdr)		
 	{
 		
-		case RADIO_INITIALIZE:
+		case RADIO_INITIALIZE_CMD:
 					
-			tx_event.data_hdr	= RADIO_INITIALIZE;
+			tx_event.data_hdr	= RADIO_INITIALIZE_EVT;
 			tx_event.data_len	= 1;
 			
 			if(rx_cmd.data[0] == CONFIG_CENTRAL)
@@ -147,9 +147,9 @@ static void receive_message(void)
 			
 			break;
 		
-		case RADIO_START_TX_POLL:			
+		case RADIO_START_TX_POLL_CMD:			
 				
-			tx_event.data_hdr	= RADIO_START_TX_POLL;
+			tx_event.data_hdr	= RADIO_START_TX_POLL_EVT;
 			tx_event.data_len	= 1;
 			
 			radio_poll_timer_start(rx_cmd.data[0]);
@@ -158,9 +158,9 @@ static void receive_message(void)
 			
 			break;
 			
-		case RADIO_START_RX_SCAN:
+		case RADIO_START_RX_SCAN_CMD:
 
-			tx_event.data_hdr	= RADIO_START_RX_SCAN;
+			tx_event.data_hdr	= RADIO_START_RX_SCAN_EVT;
 			tx_event.data_len	= 1;
 			
 			radio_scan_for_poll();
@@ -169,13 +169,20 @@ static void receive_message(void)
 			printk("CPUNET: radio start receiver scan\n"); 
 			break;
 		
-		case RADIO_PUT_PACKET:
+		case RADIO_PUT_PACKET_CMD:
 		
 			rx_buf.length = rx_cmd.data_len;
 			rx_buf.periph_num = rx_cmd.data[0];
 			memcpy(rx_buf.data, &rx_cmd.data[1], rx_cmd.data_len);			
 		
 			radio_put_packet(&rx_buf);
+			
+			
+			tx_event.data_hdr	= RADIO_PUT_PACKET_EVT;
+			tx_event.data_len	= 1;
+			tx_event.data[0]=0;
+			
+			break;
 		
 		default :
 		

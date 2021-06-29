@@ -39,9 +39,9 @@ static const uint8_t  led_pins[] = {DT_GPIO_PIN(DT_ALIAS(led0), gpios),
 
 static const struct device *led_port;
 
-static ipc_msg_t tx_cmd;
+static ipc_cmd_msg_t tx_cmd;
 
-static ipc_msg_t rx_evt;
+static ipc_evt_msg_t rx_evt;
 
 static K_SEM_DEFINE(data_rx_sem, 0, 1);
 
@@ -127,13 +127,13 @@ static int send_message(void)
 {
 	if (application_state == APP_IDLE)
 	{
-		tx_cmd.data_hdr		= RADIO_INITIALIZE;
+		tx_cmd.data_hdr		= RADIO_INITIALIZE_CMD;
 		tx_cmd.data_len		= 1;
 		tx_cmd.data[0]		= CONFIG_CENTRAL;
 	}
 	else if (application_state == APP_CFG)	
 	{
-		tx_cmd.data_hdr		= RADIO_START_TX_POLL;
+		tx_cmd.data_hdr		= RADIO_START_TX_POLL_CMD;
 		tx_cmd.data_len		= 1;
 		tx_cmd.data[0]		= POLL_TICKS;
 	}
@@ -152,7 +152,7 @@ static void receive_message(void)
 	
 	switch (rx_evt.data_hdr)
 	{
-		case RADIO_INITIALIZE:
+		case RADIO_INITIALIZE_EVT:
 		
 			if ( (err= rx_evt.data[0]) !=0)	//error occurs
 			{
@@ -169,7 +169,7 @@ static void receive_message(void)
 			
 			
 			
-		case RADIO_START_TX_POLL:
+		case RADIO_START_TX_POLL_EVT:
 		
 			if ( (err= rx_evt.data[0]) !=0)	//error occurs
 			{
@@ -184,7 +184,7 @@ static void receive_message(void)
 			break;
 		
 		
-		case RADIO_CENTRAL_DATA_RCV:
+		case RADIO_CENTRAL_DATA_RCV_EVT:
 			
 	
 				memcpy(rcv_data_buf, rx_evt.data, rx_evt.data_len);

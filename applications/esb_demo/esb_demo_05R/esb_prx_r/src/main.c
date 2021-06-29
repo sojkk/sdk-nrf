@@ -27,7 +27,7 @@
 #define LED_OFF   1
 
 
-#define PERIPH_NUM   1//1..2
+#define PERIPH_NUM   2//1..2
 
 #define	PAYLOAD_SIZE	64  //bytes
 
@@ -54,9 +54,9 @@ static const uint8_t  led_pins[] = {DT_GPIO_PIN(DT_ALIAS(led0), gpios),
 
 static const struct device *led_port;
 
-static ipc_msg_t tx_cmd;
+static ipc_cmd_msg_t tx_cmd;
 
-static ipc_msg_t rx_evt;
+static ipc_evt_msg_t rx_evt;
 
 static K_SEM_DEFINE(data_rx_sem, 0, 1);
 
@@ -142,17 +142,23 @@ static int send_message(void)
 {
 	if (application_state == APP_IDLE)
 	{
-		tx_cmd.data_hdr		= RADIO_INITIALIZE;
+		tx_cmd.data_hdr		= RADIO_INITIALIZE_CMD;
 		tx_cmd.data_len		= 2;
 		tx_cmd.data[0]		= CONFIG_PERIPH;
 		tx_cmd.data[1]		= PERIPH_NUM;
 	}
 	else if (application_state == APP_CFG)	
 	{
-		tx_cmd.data_hdr		= RADIO_START_RX_SCAN;
+		tx_cmd.data_hdr		= RADIO_PUT_PACKET_CMD;
+		tx_cmd.data_len		= sizeof(data_buf);
+		memcpy(tx_cmd.data, data_buf, sizeof(data_buf));
+	}
+	else if (application_state == APP_CFG2)	
+	{
+		tx_cmd.data_hdr		= RADIO_START_RX_SCAN_CMD;
 		tx_cmd.data_len		= 1;
 		tx_cmd.data[0]		= 0;
-	}
+	}	
 	else if (application_state == APP_OPT)
 	{
 		// Set LEDs identical to the ones on the PTX.
@@ -160,8 +166,8 @@ static int send_message(void)
 
         data_buf[2]++;
 		
-		tx_cmd.data_hdr		= RADIO_PUT_PACKET;
-		tx_cmd.data_len		= PAYLOAD_SIZE;
+		tx_cmd.data_hdr		= RADIO_PUT_PACKET_CMD;
+		tx_cmd.data_len		= sizeof(data_buf);
 		memcpy(tx_cmd.data , data_buf, sizeof(data_buf));
 		
 	}
@@ -180,7 +186,7 @@ static void receive_message(void)
 	
 	switch (rx_evt.data_hdr)
 	{
-		case RADIO_INITIALIZE:
+		case RADIO_INITIALIZE_EVT:
 		
 			if ( (err= rx_evt.data[0]) !=0)	//error occurs
 			{
@@ -196,8 +202,26 @@ static void receive_message(void)
 			break;
 			
 			
+		case RADIO_PUT_PACKET_EVT:
+		
+		if(application_state == APP_CFG)
+		{
+			if ( (err= rx_evt.data[0]) !=0)	//error occurs
+			{
+				printk("CPUAPP: radio initialize error %d\n", err);
+			}
+			else
+			{
+				application_state = APP_CFG2;  //radio configured
+				send_message();
+				printk("CPUAPP: radio initialized\n");
+			}
+		}
+		
+		break;	
 			
-		case RADIO_START_RX_SCAN:
+			
+		case RADIO_START_RX_SCAN_EVT:
 		
 			if ( (err= rx_evt.data[0]) !=0)	//error occurs
 			{
@@ -212,7 +236,7 @@ static void receive_message(void)
 			break;
 		
 		
-		case RADIO_PERIPH_DATA_SND:
+		case RADIO_PERIPH_DATA_SND_EVT:
 			if ( (err= rx_evt.data[0]) !=0)	//error occurs
 			{
 				printk("CPUAPP: radio peripheral data sent error %d\n", err);
