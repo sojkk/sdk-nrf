@@ -171,9 +171,9 @@ static void receive_message(void)
 		
 		case RADIO_PUT_PACKET_CMD:
 		
-			rx_buf.length = rx_cmd.data_len-1;
+			rx_buf.length = rx_cmd.data_len;
 			rx_buf.periph_num = rx_cmd.data[0];
-			memcpy(rx_buf.data, &rx_cmd.data[1], rx_cmd.data_len-1);			
+			memcpy(rx_buf.data, &rx_cmd.data[1], rx_cmd.data_len);			
 		
 			radio_put_packet(&rx_buf);
 			

@@ -171,7 +171,7 @@ static void receive_message(void)
 		
 		case RADIO_PUT_PACKET_CMD:
 		
-			rx_buf.length = rx_cmd.data_len-1;
+			rx_buf.length = rx_cmd.data_len -1;
 			rx_buf.periph_num = rx_cmd.data[0];
 			memcpy(rx_buf.data, &rx_cmd.data[1], rx_cmd.data_len-1);			
 		
@@ -240,7 +240,7 @@ void app_task(void *arg1, void *arg2, void *arg3)
 void lf_clock_start(void)
 {
 
-    NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_LFRC;
+    NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_LFXO;
 
   //Start LFCLK
     NRF_CLOCK->EVENTS_LFCLKSTARTED = 0;

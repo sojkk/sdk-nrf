@@ -56,5 +56,9 @@
 //aFH
 #define CENTRAL_LOSS_THRESHOLD  6//4
 
+//For encryption
+#define SECRET_KEY {5, 23, 45, 57, 26, 68, 12, 64, 13, 73, 13, 62, 26, 45, 12, 77}
+
+#define TEST_TOKEN {1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16}
 
 #endif
