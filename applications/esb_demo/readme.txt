@@ -29,3 +29,7 @@ inv-esb-aFH with esb fast ramp up and pre rssi scan, 2Mbps PHY
 esb_demo_06R
 
 inv-esb-aFH with esb fast ramp up, pre rssi scan, encryption
+
+esb_demo_07A
+
+inv-esb-aFH with esb fast ramp up and pre rssi scan, 2Mbps PHY, plus one broadcast slot
