@@ -490,6 +490,7 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 		{	
 			periph_cnt = (periph_cnt +1) % NUM_OF_PERIPH; // periph_cnt = [0..(NUM_OF_PERIPH-1)]
 			//JS Modify: 10/29/2020, switch to next rf chan for next round
+/*
 			if(periph_cnt==0)
 			{	
 				chan_cnt = (chan_cnt +1) % RADIO_CHAN_TAB_SIZE;		
@@ -499,6 +500,8 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 			m_log_total_cnt[periph_cnt]++; //log
 		}
 		else //periph_cnt =1
+*/
+                if (periph_cnt==1)
 		{
 			if ( (periph_on_sync[0]?tmp_central_success[0]:true) && (periph_on_sync[1]?tmp_central_success[1]: true) )
 			{	

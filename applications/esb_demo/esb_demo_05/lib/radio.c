@@ -454,23 +454,22 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 				chan_cnt = (chan_cnt +1) % RADIO_CHAN_TAB_SIZE;		
 				esb_set_rf_channel(m_radio_chan_tab[chan_cnt]);
 			}
-
-			m_log_total_cnt[periph_cnt]++; //log
-		}
-		else //periph_cnt =1
-		{
-			if ( (periph_on_sync[0]?tmp_central_success[0]:true) && (periph_on_sync[1]?tmp_central_success[1]: true) )
-			{	
-						central_loss_cnt[chan_cnt] =0;	//reset loss cnt if rcv pkt from both periphs 
+			else //periph_cnt =1
+			{
+				if ( (periph_on_sync[0]?tmp_central_success[0]:true) && (periph_on_sync[1]?tmp_central_success[1]: true) )
+				{	
+							central_loss_cnt[chan_cnt] =0;	//reset loss cnt if rcv pkt from both periphs 
+					
+							//Reset the tmp array	
+							tmp_central_success[0] = false;
+							tmp_central_success[1] = false;
+				}
 				
-						//Reset the tmp array	
-						tmp_central_success[0] = false;
-						tmp_central_success[1] = false;
+				
 			}
 			
-			
-		}
-		
+			m_log_total_cnt[periph_cnt]++; //log
+		}	
 //log		
 		if  (m_log_total_cnt[periph_cnt]== LOG_CNT)		
 		{		
@@ -606,12 +605,12 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 	if (err) {
 		return err;
 	}
-	
+/*	
 	err = esb_set_rf_channel(m_radio_chan_tab[0]);
 	if (err) {
 		return err;
 	}
-	
+*/	
 	if(!is_central)
 	{
 		addr_prefix[DATA_PIPE] = periph_num;
@@ -660,6 +659,11 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 		 unused_radio_table[i] = radio_table[RADIO_CHAN_TAB_SIZE+i][0];
 	}
 
+	
+	err = esb_set_rf_channel(m_radio_chan_tab[0]);
+	if (err) {
+		return err;
+	}
 	
 	return 0;
 }
