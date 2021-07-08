@@ -224,11 +224,17 @@ static void rtc_tx_event_handler(void)
 	
 	if(periph_cnt == NUM_OF_PERIPH-1) //Broadcast slot
  	{
-
-		gpio_pin_set(dbg_port, dbg_pins[periph_cnt], 1); //Set debug pin for poll the periph		
+	
+/*
+		//Broadcast data in data_payload
 		
-		//Broadcast data in data_payload		
+		//server periphs 
+		esb_set_addr_prefix(periph_cnt+1, DATA_PIPE);
+		
+		//Upload data to data_payload				
+		data_payload.data[0] = switch_channel_counter[periph_cnt];			
 		data_payload.noack = true;
+		memcpy(&data_payload.data[1], next_radio_chan_tab, RADIO_CHAN_TAB_SIZE); 
 		i = esb_write_payload(&data_payload);
 		if (i == 0)
 		{
@@ -240,18 +246,41 @@ static void rtc_tx_event_handler(void)
 		{
 			LOG_WRN("Broadcast packet failed");	
 		}
+					
 		
-		
-		gpio_pin_set(dbg_port,dbg_pins[periph_cnt], 0); //Set debug pin for poll the periph
-		
+*/
+			
+			esb_set_addr_prefix(periph_cnt+1, DATA_PIPE);
+			//Upload data to dum payload
+			dum_payload.data[0] = switch_channel_counter[periph_cnt];
+			dum_payload.noack	= true;
+			memcpy(&dum_payload.data[1], next_radio_chan_tab, RADIO_CHAN_TAB_SIZE); 
+			
+
+			i = esb_write_payload(&dum_payload);
+			if (i == 0)
+			{
+				esb_start_tx();
+				gpio_pin_set(dbg_port,dbg_pins[periph_cnt], 1); //Set debug pin for poll the periph
+				
+			}
+			else
+			{
+				LOG_WRN("Broadcast packet failed");	
+			}
+
+		gpio_pin_set(dbg_port,dbg_pins[periph_cnt], 0);
 		
 		//Set next channel 
+/*		
 		periph_cnt=0;
 		chan_cnt= (chan_cnt +1) % RADIO_CHAN_TAB_SIZE;		
 		esb_set_rf_channel(m_radio_chan_tab[chan_cnt]);
-									
-		m_event_callback(RADIO_CENTRAL_BCT_SENT);	
+*/		
 
+		
+		//m_event_callback(RADIO_CENTRAL_BCT_SENT);	
+		
 	}
 	
 	else
@@ -434,16 +463,31 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 	switch (p_event->evt_id)
     {
         case ESB_EVENT_TX_SUCCESS:
-				LOG_DBG("TX SUCCESS EVENT");	                                                          
-				__NOP();
+				LOG_DBG("TX SUCCESS EVENT");	    
+				if(periph_cnt== NUM_OF_PERIPH-1)
+				{
+					
+					gpio_pin_set(dbg_port,dbg_pins[periph_cnt], 0);
+					periph_cnt=0;
+					chan_cnt= (chan_cnt +1) % RADIO_CHAN_TAB_SIZE;		
+					esb_set_rf_channel(m_radio_chan_tab[chan_cnt]);
+					
+					
+				}
+			
 				break;
         case ESB_EVENT_TX_FAILED:
 				LOG_DBG("TX FAILED EVENT");
 				(void) esb_flush_tx();			
+				
+	
+				
+				
 				break;
         case ESB_EVENT_RX_RECEIVED:										 
 				LOG_DBG("RX RECEIVED EVENT");
-				
+if(periph_cnt!=2)
+{	
 				//aFH: Resets central loss cent & switch channel counter for particular peripheral if get rx received
 				periph_on_sync[periph_cnt]= true;
 				tmp_central_success[periph_cnt] = true;
@@ -474,7 +518,7 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 									
 				m_event_callback(RADIO_CENTRAL_DATA_RECEIVED);		   
 				
-				
+}				
 				break;
 			
 			
@@ -483,46 +527,53 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 				break;
 	}	
 
-
+if(periph_cnt!=2)
+{	
         //gpio_pin_set(dbg_port, dbg_pins[periph_cnt],0); //clear the debug pin for testing timer only
 		
 		if (p_event->evt_id != ESB_EVENT_TX_SUCCESS)   // TX_SUCCESS deplicates with DATA_RECEIVED
 		{	
-			periph_cnt = (periph_cnt +1) % NUM_OF_PERIPH; // periph_cnt = [0..(NUM_OF_PERIPH-1)]
-			//JS Modify: 10/29/2020, switch to next rf chan for next round
-/*
-			if(periph_cnt==0)
-			{	
-				chan_cnt = (chan_cnt +1) % RADIO_CHAN_TAB_SIZE;		
-				esb_set_rf_channel(m_radio_chan_tab[chan_cnt]);
-			}
-
-			m_log_total_cnt[periph_cnt]++; //log
-		}
-		else //periph_cnt =1
-*/
-                if (periph_cnt==1)
-		{
-			if ( (periph_on_sync[0]?tmp_central_success[0]:true) && (periph_on_sync[1]?tmp_central_success[1]: true) )
-			{	
-						central_loss_cnt[chan_cnt] =0;	//reset loss cnt if rcv pkt from both periphs 
+				periph_cnt = (periph_cnt +1) % NUM_OF_PERIPH; // periph_cnt = [0..(NUM_OF_PERIPH-1)]
 				
-						//Reset the tmp array	
-						tmp_central_success[0] = false;
-						tmp_central_success[1] = false;
-			}
 			
-			
+				//JS Modify: 10/29/2020, switch to next rf chan for next round
+/*
+				if(periph_cnt==0)
+				{	
+					chan_cnt = (chan_cnt +1) % RADIO_CHAN_TAB_SIZE;		
+					esb_set_rf_channel(m_radio_chan_tab[chan_cnt]);
+				}
+				else		
+*/							
+				if (periph_cnt==1) //periph_cnt =1
+				{
+					if ( (periph_on_sync[0]?tmp_central_success[0]:true) && (periph_on_sync[1]?tmp_central_success[1]: true) )
+					{	
+								central_loss_cnt[chan_cnt] =0;	//reset loss cnt if rcv pkt from both periphs 
+						
+								//Reset the tmp array	
+								tmp_central_success[0] = false;
+								tmp_central_success[1] = false;
+					}
+					
+					
+				}
+				
+				m_log_total_cnt[periph_cnt]++; //log
 		}
 		
 //log		
-		if  (m_log_total_cnt[periph_cnt]== LOG_CNT)		
+		if  (m_log_total_cnt[periph_cnt]== LOG_CNT  && periph_cnt!= (NUM_OF_PERIPH-1))		
 		{		
 			//success_rate = 	m_log_success_cnt[periph_cnt] *100 /m_log_total_cnt[periph_cnt] ;
 			LOG_INF("Success rate for periph %d  = %d", periph_cnt+1, m_log_success_cnt[periph_cnt]);
 			m_log_total_cnt[periph_cnt]=0;
 			m_log_success_cnt[periph_cnt]=0;
 		}
+	
+	
+}	
+		
 }
 
 
@@ -565,8 +616,7 @@ static void nrf_esb_prx_event_handler(struct esb_evt const *p_event)
 				  m_event_callback(RADIO_PERIPH_DATA_SENT);
 				}
 				
-                
-										
+                										
 				rx_state = RADIO_PERIPH_WAIT_FOR_ACK_WR;
 				radio_rtc_clear_count();
 				radio_rtc_compare0_set(RX_WAIT_FOR_ACK_WR_PERIOD);
@@ -631,10 +681,10 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 	struct esb_config config        = ESB_DEFAULT_CONFIG;
 	
 	config.protocol                 = ESB_PROTOCOL_ESB_DPL;
-	config.bitrate                  = ESB_BITRATE_2MBPS_BLE;
+	config.bitrate                  = ESB_BITRATE_1MBPS_BLE;
 	config.event_handler            = (is_central)?nrf_esb_ptx_event_handler:nrf_esb_prx_event_handler;
 	config.mode                     = (is_central)?ESB_MODE_PTX:ESB_MODE_PRX;
-	config.selective_auto_ack       = (is_central)?true:false;
+	config.selective_auto_ack       = true; //(is_central)?true:false;
 	config.tx_output_power          = tx_power;
 	config.retransmit_count         = RETRAN_CNT;
 	config.tx_mode					= ESB_TXMODE_MANUAL;  //JS Modify: 1/20/2021 , Use manual tx start
@@ -651,10 +701,10 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 		return err;
 	}
 	
-	err = esb_set_rf_channel(m_radio_chan_tab[0]);
-	if (err) {
-		return err;
-	}
+//	err = esb_set_rf_channel(m_radio_chan_tab[0]);
+//	if (err) {
+//		return err;
+//	}
 	
 	if(!is_central)
 	{
@@ -702,6 +752,11 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 	for (i=0; i< RADIO_UNUSED_CHAN_TAB_SIZE ; i++)
 	{
 		 unused_radio_table[i] = radio_table[RADIO_CHAN_TAB_SIZE+i][0];
+	}
+	
+	err = esb_set_rf_channel(m_radio_chan_tab[0]);
+	if (err) {
+		return err;
 	}
 
 	
@@ -760,6 +815,14 @@ void radio_put_packet(radio_data_t * tx_data)
 	data_payload.pipe = DATA_PIPE;
 	data_payload.length = tx_data->length;
 	memcpy(data_payload.data, tx_data->data, tx_data->length);
+	
+}
+
+void radio_put_bct_packet(radio_data_t * tx_data)
+{	
+	data_payload.pipe = DATA_PIPE;
+	data_payload.length = tx_data->length  + BCT_PKT_LENGTH;
+	memcpy(&data_payload.data[BCT_PKT_LENGTH], tx_data->data, tx_data->length);
 	
 }
 		

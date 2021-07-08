@@ -125,19 +125,21 @@ void radio_evt_cb(uint8_t radio_event)
             leds_update(rx_payload.data[1]);
 
 	}
+
 	else if (radio_event==RADIO_CENTRAL_BCT_SENT)
 	{
 			bct_send.data[1]++;
-			radio_put_packet(&bct_send);			
+			radio_put_bct_packet(&bct_send);			
 
 	}
+	
 }
 
 void data_init(void)
 {
-	bct_send.length = BROADCAST_SIZE;
+	bct_send.length = 10; //BROADCAST_SIZE;
 	bct_send.periph_num = 0;
-	memcpy(bct_send.data, broadcast_packet, BROADCAST_SIZE);	
+	memcpy(bct_send.data, broadcast_packet, 10); //BROADCAST_SIZE);	
 }
 
 void main(void)
@@ -149,13 +151,17 @@ void main(void)
 	
 	gpios_init();
 	
-      //radio_setup(true, RADIO_TX_POWER_4DBM, radio_evt_cb, 0);
+	data_init();
+	
+	//radio_setup(true, RADIO_TX_POWER_4DBM, radio_evt_cb, 0);
 
-        radio_setup(true, RADIO_TX_POWER_0DBM, radio_evt_cb, 0);
-          
-        radio_poll_timer_start(POLL_TICKS);
-
-        LOG_INF("Central PTX started...");
+	radio_setup(true, RADIO_TX_POWER_0DBM, radio_evt_cb, 0);	
+	
+	radio_put_bct_packet(&bct_send);
+		         
+	radio_poll_timer_start(POLL_TICKS);
+	
+	LOG_INF("Central PTX started...");
 
 	while (1) {
 		

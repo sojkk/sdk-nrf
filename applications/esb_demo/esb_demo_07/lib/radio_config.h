@@ -42,8 +42,8 @@
 
 #define	RETRAN_CNT                  0
 
-#define ADJ                         12 //25
-#define POLL_TICKS                  15 //30 //40 //30.5 us  PER TICK  
+#define ADJ                         25
+#define POLL_TICKS                  30 //30.5 us  PER TICK  
 
 
 #define RX_SEARCH_PERIOD            POLL_TICKS * (NUM_OF_PERIPH+2)
@@ -56,5 +56,6 @@
 //aFH
 #define CENTRAL_LOSS_THRESHOLD  6//4
 
+#define BCT_PKT_LENGTH			4
 
 #endif

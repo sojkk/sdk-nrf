@@ -72,4 +72,6 @@ void radio_scan_for_poll(void);
 
 void radio_put_packet(radio_data_t * tx_data);
 
+void radio_put_bct_packet(radio_data_t * tx_data);
+
 #endif
