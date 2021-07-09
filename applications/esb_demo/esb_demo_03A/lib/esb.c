@@ -675,7 +675,7 @@ static void on_radio_disabled_tx_noack(void)
 	} else {
 		NVIC_SetPendingIRQ(ESB_EVT_IRQ);
 		start_tx_transaction();
-	}	
+	}
 }
 
 static void on_radio_disabled_tx(void)
@@ -1560,20 +1560,6 @@ void esb_debug_pins_configure(void)
 */
 
 
-//JS Modify: 4/6/2020 get the address prefix according to pipe number
-
-uint32_t esb_set_addr_prefix(uint8_t val, uint8_t pipe)
-{	
-	esb_update_prefix(pipe, val);
-	
-	pids[pipe] = (pids[pipe] + 1) % PID_MAX;  //update pid every time prefix setting
-	
-	return 0;	
-}	
-
-
-
-
 uint8_t esb_get_addr_prefix(uint8_t pipe)
 {	
 	if (current_payload->pipe >= CONFIG_ESB_PIPE_COUNT) {
@@ -1582,35 +1568,4 @@ uint8_t esb_get_addr_prefix(uint8_t pipe)
 		
 	return (esb_addr.pipe_prefixes[pipe]);
 	
-}
-
-uint8_t esb_rssi_scan(uint8_t freq)
-{
-	
-		if (esb_state != ESB_STATE_IDLE) {
-			return -EBUSY;
-		}
-
-		NRF_RADIO->EVENTS_DISABLED 	= 0;
-		NRF_RADIO->SHORTS      		= radio_shorts_common ;
-		esb_state					= ESB_STATE_PRX;
-
-
-		NRF_RADIO->FREQUENCY    = freq;
-
-		NRF_RADIO->TASKS_RXEN  = 1;
-	
-		while (NRF_RADIO->EVENTS_READY == 0)			//wait for rx ready
-		 ;
-		NRF_RADIO->EVENTS_READY =0;
-	
-		NRF_RADIO->TASKS_RSSISTART = 1;
-		
-		while (NRF_RADIO->EVENTS_RSSIEND == 0)			//wait for measurement finish
-			;
-		NRF_RADIO->EVENTS_RSSIEND=0;
-	
-		esb_stop_rx();
-
-		return NRF_RADIO->RSSISAMPLE;
 }

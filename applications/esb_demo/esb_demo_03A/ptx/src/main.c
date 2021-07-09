@@ -30,19 +30,8 @@ static const uint8_t  led_pins[] = {DT_GPIO_PIN(DT_ALIAS(led0), gpios),
 
 static const struct device *led_port;
 
-#define	BROADCAST_SIZE	70  //bytes
 
-static radio_data_t bct_send;
 
-uint8_t broadcast_packet[] = { 70,  0, 68, 67, 66, 65, 64, 63, 62, 61, 
-                               60, 59, 58, 57, 56, 55, 54, 53, 52, 51,
-                               50, 49, 48, 47, 46, 45, 44, 43, 42, 41,
-                               40, 39, 38, 37, 36, 35, 34, 33, 32, 31,
-                               30, 29, 28, 27, 26, 25, 24, 23, 22, 21,
-                               20, 19, 18, 17, 16, 15, 14, 13, 12, 11,
-                               10,  9,  8,  7,  6,  5,  4,  3,  2,  1 };
-							 
-							 
 void lf_clock_start(void)
 {
 
@@ -51,7 +40,6 @@ void lf_clock_start(void)
 #else
 	NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_RC;
 #endif
-
 
   //Start LFCLK
     NRF_CLOCK->EVENTS_LFCLKSTARTED = 0;
@@ -119,30 +107,17 @@ void radio_evt_cb(uint8_t radio_event)
 {
 	radio_data_t rx_payload;
 
-	if(radio_event==RADIO_CENTRAL_DATA_RECEIVED)
+        if(radio_event==RADIO_CENTRAL_DATA_RECEIVED)
 	{
 
             radio_fetch_packet(&rx_payload);
 
             leds_update(rx_payload.data[1]);
 
-	}
-
-	else if (radio_event==RADIO_CENTRAL_BCT_SENT)
-	{
-			bct_send.data[1]++;
-			radio_put_bct_packet(&bct_send);			
-
-	}
-	
+        }
 }
 
-void data_init(void)
-{
-	bct_send.length = 10; //BROADCAST_SIZE;
-	bct_send.periph_num = 0;
-	memcpy(bct_send.data, broadcast_packet, 10); //BROADCAST_SIZE);	
-}
+
 
 void main(void)
 {
@@ -153,17 +128,13 @@ void main(void)
 	
 	gpios_init();
 	
-	data_init();
-	
-	//radio_setup(true, RADIO_TX_POWER_4DBM, radio_evt_cb, 0);
+      //radio_setup(true, RADIO_TX_POWER_4DBM, radio_evt_cb, 0);
 
-	radio_setup(true, RADIO_TX_POWER_0DBM, radio_evt_cb, 0);	
-	
-	radio_put_bct_packet(&bct_send);
-		         
-	radio_poll_timer_start(POLL_TICKS);
-	
-	LOG_INF("Central PTX started...");
+        radio_setup(true, RADIO_TX_POWER_0DBM, radio_evt_cb, 0);
+          
+        radio_poll_timer_start(POLL_TICKS);
+
+        LOG_INF("Central PTX started...");
 
 	while (1) {
 		
