@@ -64,6 +64,8 @@ static struct esb_payload   dum_payload  = ESB_CREATE_PAYLOAD(DATA_PIPE, 0xC0, 0
  */
 
 
+static struct esb_payload   bct_payload  = ESB_CREATE_PAYLOAD(DATA_PIPE, 0xB0, 0xB1, 0xB2, 0xB3);  // Poll packet contains 
+
 static struct esb_payload    data_payload;
 
 // These function pointers are changed dynamically, depending on protocol configuration and state.
@@ -250,17 +252,13 @@ static void rtc_tx_event_handler(void)
 		
 */
 			
-			esb_set_addr_prefix(periph_cnt+1, DATA_PIPE);
-			//Upload data to dum payload
-			dum_payload.data[0] = switch_channel_counter[periph_cnt];
-			dum_payload.noack	= true;
-			memcpy(&dum_payload.data[1], next_radio_chan_tab, RADIO_CHAN_TAB_SIZE); 
-			
-
-			i = esb_write_payload(&dum_payload);
+			esb_set_addr_prefix(2, DATA_PIPE);
+			//Upload data to dum payload		
+			bct_payload.noack	= true;
+			i = esb_write_payload(&bct_payload);
 			if (i == 0)
 			{
-				esb_start_tx();
+				//esb_start_tx();
 				gpio_pin_set(dbg_port,dbg_pins[periph_cnt], 1); //Set debug pin for poll the periph
 				
 			}
@@ -269,14 +267,12 @@ static void rtc_tx_event_handler(void)
 				LOG_WRN("Broadcast packet failed");	
 			}
 
-		gpio_pin_set(dbg_port,dbg_pins[periph_cnt], 0);
 		
-		//Set next channel 
-/*		
+		//Set next channel 		
 		periph_cnt=0;
-		chan_cnt= (chan_cnt +1) % RADIO_CHAN_TAB_SIZE;		
-		esb_set_rf_channel(m_radio_chan_tab[chan_cnt]);
-*/		
+	//	chan_cnt= (chan_cnt +1) % RADIO_CHAN_TAB_SIZE;		
+	//	esb_set_rf_channel(m_radio_chan_tab[chan_cnt]);
+		
 
 		
 		//m_event_callback(RADIO_CENTRAL_BCT_SENT);	
@@ -309,7 +305,7 @@ static void rtc_tx_event_handler(void)
 			i = esb_write_payload(&dum_payload);
 			if (i == 0)
 			{
-				esb_start_tx();
+				//esb_start_tx();
 				gpio_pin_set(dbg_port,dbg_pins[periph_cnt], 1); //Set debug pin for poll the periph
 				
 			}
@@ -353,6 +349,7 @@ static void rtc_tx_event_handler(void)
 						//central_loss_cnt[chan_cnt]++;
 			}
 	
+		
 	}
 	
 }
@@ -463,13 +460,16 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 	switch (p_event->evt_id)
     {
         case ESB_EVENT_TX_SUCCESS:
-				LOG_DBG("TX SUCCESS EVENT");	    
+				LOG_DBG("TX SUCCESS EVENT");
+				
 				if(periph_cnt== NUM_OF_PERIPH-1)
 				{
+						//gpio_pin_set(dbg_port,dbg_pins[periph_cnt], 0);
+				
+			
 					
-					gpio_pin_set(dbg_port,dbg_pins[periph_cnt], 0);
-					periph_cnt=0;
-					chan_cnt= (chan_cnt +1) % RADIO_CHAN_TAB_SIZE;		
+					chan_cnt= (chan_cnt +1) % RADIO_CHAN_TAB_SIZE;
+				
 					esb_set_rf_channel(m_radio_chan_tab[chan_cnt]);
 					
 					
@@ -478,11 +478,9 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 				break;
         case ESB_EVENT_TX_FAILED:
 				LOG_DBG("TX FAILED EVENT");
+				
 				(void) esb_flush_tx();			
-				
-	
-				
-				
+								
 				break;
         case ESB_EVENT_RX_RECEIVED:										 
 				LOG_DBG("RX RECEIVED EVENT");
@@ -687,7 +685,7 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 	config.selective_auto_ack       = true; //(is_central)?true:false;
 	config.tx_output_power          = tx_power;
 	config.retransmit_count         = RETRAN_CNT;
-	config.tx_mode					= ESB_TXMODE_MANUAL;  //JS Modify: 1/20/2021 , Use manual tx start
+	//config.tx_mode					= ESB_TXMODE_MANUAL;  //JS Modify: 1/20/2021 , Use manual tx start
 	config.retransmit_delay         = 600;
 	config.payload_length           = 64;
 	

@@ -62,17 +62,6 @@ static const struct device *dbg_port;
 
 static void RADIO_RTC_IRQHandler(void);
 
-static struct esb_payload   bct_payload;   //= ESB_CREATE_PAYLOAD(DATA_PIPE, 0xC0, 0xC1, 0xC2, 0xC3);  // Poll packet contains 
-
-
-
-uint8_t broadcast_packet[] = { 70,  0, 68, 67, 66, 65, 64, 63, 62, 61, 
-                               60, 59, 58, 57, 56, 55, 54, 53, 52, 51,
-                               50, 49, 48, 47, 46, 45, 44, 43, 42, 41,
-                               40, 39, 38, 37, 36, 35, 34, 33, 32, 31,
-                               30, 29, 28, 27, 26, 25, 24, 23, 22, 21,
-                               20, 19, 18, 17, 16, 15, 14, 13, 12, 11,
-                               10,  9,  8,  7,  6,  5,  4,  3,  2,  1 };
 
 
 /**@brief Function for init the RTC1 timer.
@@ -149,11 +138,10 @@ static void rtc_tx_event_handler(void)
 	
 	if(periph_cnt==1) //broadcast
 	{
-		memcpy(bct_payload.data, broadcast_packet, sizeof(broadcast_packet)); 
-		bct_payload.length = sizeof(broadcast_packet);
-		bct_payload.pipe = DATA_PIPE;
-		bct_payload.noack = true;
-		err = esb_write_payload(&bct_payload);
+		data_payload.noack = true;
+		err = esb_write_payload(&data_payload);
+		
+		m_event_callback(RADIO_CENTRAL_BCT_SENT);
 	}
 	else
 	{
@@ -538,6 +526,14 @@ void radio_scan_for_poll(void)
 
 
 void radio_put_packet(radio_data_t * tx_data)
+{	
+	data_payload.pipe = DATA_PIPE;
+	data_payload.length = tx_data->length;
+	memcpy(data_payload.data, tx_data->data, tx_data->length);
+	
+}
+
+void radio_put_bct_packet(radio_data_t * tx_data)
 {	
 	data_payload.pipe = DATA_PIPE;
 	data_payload.length = tx_data->length;

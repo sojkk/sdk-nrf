@@ -1,14 +1,17 @@
 ESB DEMO
 
+--------------------------------------------------------------------------------------------------------------
 esb_demo_01
 
 same as NCS org esb demo
 
+--------------------------------------------------------------------------------------------------------------
 
 esb_demo_02
 
 inv-esb-fixFH with esb normal ramp up
 
+--------------------------------------------------------------------------------------------------------------
 
 esb_demo_03/ esb_demo_03R
 
@@ -16,12 +19,19 @@ inv-esb-fixFH with esb fast ramp up
 
 esb_demo_03A
 
-inv-esb-fixFH with esb fast ramp up, 3-4 periphs
+inv-esb-fixFH with esb fast ramp up, 3 periphs, with mid one for broadcasting
+
+esb_demo_03B
+
+inv-esb-fixFH with esb fast ramp up, 3 periphs, with mid one for broadcasting, get data from app callback
+
+--------------------------------------------------------------------------------------------------------------
 
 esb_demo_04
 
 inv-esb-aFH with esb fast ramp up
 
+--------------------------------------------------------------------------------------------------------------
 
 esb_demo_05 / esb_demo_05R
 
@@ -32,11 +42,20 @@ esb_demo_05A
 inv-esb-aFH with esb fast ramp up and pre rssi scan, 2Mbps PHY
 
 
+esb_demo_05B
+
+inv-esb-aFH with esb fast ramp up and pre rssi scan, 3 periphs
+
+--------------------------------------------------------------------------------------------------------------
+
 esb_demo_06R
 
 inv-esb-aFH with esb fast ramp up, pre rssi scan, encryption
 
+--------------------------------------------------------------------------------------------------------------
 
 esb_demo_07
 
 inv-esb-aFH with esb fast ramp up and pre rssi scan, plus one broadcast slot
+
+--------------------------------------------------------------------------------------------------------------
