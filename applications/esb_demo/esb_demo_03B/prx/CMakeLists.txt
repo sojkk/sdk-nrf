@@ -9,7 +9,7 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(NONE)
 
 
-target_sources(app PRIVATE src/main.c)
+target_sources(app PRIVATE src/main-prx.c)
 target_sources(app PRIVATE ../lib/esb.c)
 target_sources(app PRIVATE ../lib/radio.c)
 

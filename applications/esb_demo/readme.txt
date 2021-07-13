@@ -41,11 +41,6 @@ esb_demo_05A
 
 inv-esb-aFH with esb fast ramp up and pre rssi scan, 2Mbps PHY
 
-
-esb_demo_05B
-
-inv-esb-aFH with esb fast ramp up and pre rssi scan, 3 periphs
-
 --------------------------------------------------------------------------------------------------------------
 
 esb_demo_06R

@@ -39,8 +39,6 @@ static uint8_t rx_loss_cnt = 0;
 
 static uint8_t periph_cnt = 0;
 														 
-//static volatile bool     just_sync = false;  //<-- 
-
 static struct esb_payload	dum_payload  = ESB_CREATE_PAYLOAD(DATA_PIPE, 0xBE);
 
 static struct esb_payload    data_payload;
@@ -62,6 +60,7 @@ static const struct device *dbg_port;
 
 static void RADIO_RTC_IRQHandler(void);
 
+static bool bct_rcv_flag = false;
 
 
 /**@brief Function for init the RTC1 timer.
@@ -136,10 +135,18 @@ static void rtc_tx_event_handler(void)
 	//server periphs 
 	esb_update_prefix(1, periph_cnt+1);	
 	
-	if(periph_cnt==1) //broadcast
+	if(periph_cnt == BCT_PERIPH_NUM-1) //broadcast
 	{
 		data_payload.noack = true;
 		err = esb_write_payload(&data_payload);
+		if(err)
+		{
+			LOG_ERR("Broadcasting packet failed");	
+		}
+        else
+		{
+			gpio_pin_set(dbg_port, dbg_pins[periph_cnt], 1); //Set debug pin for poll the periph
+		}
 		
 		m_event_callback(RADIO_CENTRAL_BCT_SENT);
 	}
@@ -191,27 +198,7 @@ static void rtc_rx_event_handler(void)
 	}
 	else if ( rx_state == RADIO_PERIPH_WAIT_FOR_ACK_WR)
 	{
-/*		
-		if(!just_sync)
-		{
-				esb_stop_rx();	
-				gpio_pin_set(dbg_port, dbg_pins[4], 0);
-		}
-		
-		rx_state = RADIO_PERIPH_OPERATE;
-		radio_rtc_clear_count();  
-		
-		if (just_sync)  // just stay there to turn on the receiver until get the packet
-		{
-			just_sync = false;
-			radio_rtc_compare0_set(RX_OPERATE_PERIOD_JUST_SYNC);
-			
-		}
-		else
-		{
-			radio_rtc_compare0_set(RX_OPERATE_PERIOD_W_WAIT);
-		}
-*/
+
 		
 		esb_stop_rx();	
 		gpio_pin_set(dbg_port, dbg_pins[4], 0);							
@@ -279,12 +266,18 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
     {
         case ESB_EVENT_TX_SUCCESS:
 		{
-                                LOG_DBG("TX SUCCESS EVENT");	                                                          
-                                __NOP();
+				LOG_DBG("TX SUCCESS EVENT");	                                                          
+				__NOP();
 								
-								
-			if(periph_cnt ==1)
-				periph_cnt = (periph_cnt +1) % NUM_OF_PERIPH;
+									
+				if(periph_cnt == BCT_PERIPH_NUM-1)
+				{	
+					gpio_pin_set(dbg_port, dbg_pins[periph_cnt], 0);
+					
+					periph_cnt = (periph_cnt +1) % NUM_OF_PERIPH;
+					
+					
+				}
 			
 		}						
 				break;
@@ -298,7 +291,7 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 				//m_log_success_cnt[periph_cnt]++; //log
 				
 
-                                gpio_pin_set(dbg_port, dbg_pins[periph_cnt],0); //clear the debug pin if received data 
+				gpio_pin_set(dbg_port, dbg_pins[periph_cnt],0); //clear the debug pin if received data 
                              
 									
 				m_event_callback(RADIO_CENTRAL_DATA_RECEIVED);		   
@@ -353,24 +346,37 @@ static void nrf_esb_prx_event_handler(struct esb_evt const *p_event)
         case ESB_EVENT_RX_RECEIVED:
 				LOG_DBG("RX RECEIVED EVENT");
 	
-				if (p_event->tx_attempts <= RETRAN_CNT)
+		if (p_event->tx_attempts <= RETRAN_CNT)
 						m_rx_received = true;
 	
-				
-                                err = esb_read_rx_payload(&dum_payload);
-				if (!err)             
-				{								
+		if(bct_rcv_flag)
+		{
+			           										
+			m_event_callback(RADIO_PERIPH_DATA_RECEIVED);	
+			
 		
-					esb_write_payload(&data_payload);
-				
-						m_event_callback(RADIO_PERIPH_DATA_SENT);
-				}		
+		
+		}
+		else
+		{
+	
+			err = esb_read_rx_payload(&dum_payload);
+			
+			if (!err)             
+			{								
+	
+				esb_write_payload(&data_payload);
+			
+				m_event_callback(RADIO_PERIPH_DATA_SENT);
+			}		
 										
-				rx_state = RADIO_PERIPH_WAIT_FOR_ACK_WR;
-				radio_rtc_clear_count();
-				radio_rtc_compare0_set(RX_WAIT_FOR_ACK_WR_PERIOD);
-				rx_loss_cnt = 0;
+				
+		}
 		
+		rx_state = RADIO_PERIPH_WAIT_FOR_ACK_WR;
+		radio_rtc_clear_count();
+		radio_rtc_compare0_set(RX_WAIT_FOR_ACK_WR_PERIOD);
+		rx_loss_cnt = 0;
 							
 		default: 
 			
@@ -431,12 +437,22 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 	config.bitrate                  = ESB_BITRATE_1MBPS;
 	config.event_handler            = (is_central)?nrf_esb_ptx_event_handler:nrf_esb_prx_event_handler;
 	config.mode                     = (is_central)?ESB_MODE_PTX:ESB_MODE_PRX;
-	config.selective_auto_ack       = true; //false;
-	config.tx_output_power          =  tx_power;
+	config.selective_auto_ack       = true; 
+	config.tx_output_power          = tx_power;
 	config.retransmit_count         = RETRAN_CNT;
 	config.retransmit_delay         = 600;
-        config.payload_length           = 64;
+	config.payload_length           = 64;
+
+	bct_rcv_flag = false;
+
+/**********Receive Broadcast ***************************/	
 	
+	if (periph_num == BCT_PERIPH_NUM)
+	{
+		bct_rcv_flag = true;
+	}
+	
+/*******************************************************/	
 	err = esb_init(&config);
 	if (err) {
 		return err;
@@ -473,7 +489,7 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 
 	radio_hfclk_start();
 
-        dbg_pins_init();
+	dbg_pins_init();
 		
 	return 0;
 }
