@@ -48,6 +48,6 @@
 	
 #define RX_LOSS_THRESHOLD           RADIO_CHAN_TAB_SIZE * 2
 
-#define BCT_PERIPH_NUM				2			
+#define BCT_PERIPH_NUM				0			
 
 #endif

@@ -167,7 +167,7 @@ static struct esb_address esb_addr = {
 	.addr_length = 5,
 	.num_pipes = CONFIG_ESB_PIPE_COUNT,
 	.rf_channel = 2,
-	.rx_pipes_enabled = 0 //0xFF close all pipes by default
+	.rx_pipes_enabled = 0xFF
 };
 
 static esb_event_handler event_handler;
@@ -1562,10 +1562,11 @@ void esb_debug_pins_configure(void)
 
 uint8_t esb_get_addr_prefix(uint8_t pipe)
 {	
-	if (current_payload->pipe >= CONFIG_ESB_PIPE_COUNT) {
+	
+	if (pipe >= CONFIG_ESB_PIPE_COUNT) {
 		return -EINVAL;
 	}
-		
+	
 	return (esb_addr.pipe_prefixes[pipe]);
 	
 }

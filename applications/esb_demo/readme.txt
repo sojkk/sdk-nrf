@@ -25,6 +25,11 @@ esb_demo_03B
 
 inv-esb-fixFH with esb fast ramp up, 3 periphs, with mid one for broadcasting, get data from app callback
 
+
+esb_demo_03C
+
+Re-arrange periph num : 0- broadcast, 1 & 2 for mic.
+
 --------------------------------------------------------------------------------------------------------------
 
 esb_demo_04

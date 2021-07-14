@@ -22,7 +22,7 @@ LOG_MODULE_REGISTER(esb_ptx, CONFIG_APP_LOG_LEVEL);
 
 #define DT_DRV_COMPAT nordic_nrf_clock
 
-#define	BROADCAST_SIZE	90  //bytes
+#define	BROADCAST_SIZE	70  //bytes
 
 static const uint8_t  led_pins[] = {DT_GPIO_PIN(DT_ALIAS(led0), gpios),
                                     DT_GPIO_PIN(DT_ALIAS(led1), gpios),
@@ -133,6 +133,7 @@ void radio_evt_cb(uint8_t radio_event)
 		bct_send.data[1]++;
 		bct_send.periph_num = BCT_PERIPH_NUM ;
 		radio_put_packet(&bct_send);
+		LOG_INF("bct_send payload = %d, %d, %d", bct_send.data[0], bct_send.data[1], bct_send.data[2]);
 	}
 }
 

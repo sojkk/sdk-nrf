@@ -133,10 +133,15 @@ static void rtc_tx_event_handler(void)
 	radio_rtc_clear_count();
 	
 	//server periphs 
-	esb_update_prefix(DATA_PIPE, periph_cnt+1);	
+	esb_update_prefix(DATA_PIPE, periph_cnt);	
+
 	
-	if(periph_cnt == BCT_PERIPH_NUM-1) //broadcast
+	if(periph_cnt == BCT_PERIPH_NUM) //broadcast
 	{
+		
+		LOG_DBG("data payload = %d, %d, %d", data_payload.data[0], data_payload.data[1], data_payload.data[2]);
+		LOG_DBG("data length =%d, pipe = %d", data_payload.length, data_payload.pipe);
+		
 		data_payload.noack = true;
 		err = esb_write_payload(&data_payload);
 		if(err)
@@ -270,7 +275,7 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 				__NOP();
 								
 									
-				if(periph_cnt == BCT_PERIPH_NUM-1)
+				if(periph_cnt == BCT_PERIPH_NUM)
 				{	
 					gpio_pin_set(dbg_port, dbg_pins[periph_cnt], 0);
 					
@@ -311,12 +316,14 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 		if (p_event->evt_id != ESB_EVENT_TX_SUCCESS)   // TX_SUCCESS deplicates with DATA_RECEIVED
 		{	
 			periph_cnt = (periph_cnt +1) % NUM_OF_PERIPH; // periph_cnt = [0..(NUM_OF_PERIPH-1)]
+
 			//JS Modify: 10/29/2020, switch to next rf chan for next round
 			if(periph_cnt==0)
 			{	
 				chan_cnt = (chan_cnt +1) % RADIO_CHAN_TAB_SIZE;		
 				esb_set_rf_channel(m_radio_chan_tab[chan_cnt]);
 			}
+			
 			//m_log_total_cnt[periph_cnt]++; //log
 		}
 		
@@ -427,7 +434,7 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 {
 	int err;
 	
-	uint8_t addr_prefix[] = {0, 1};
+	uint8_t addr_prefix[]= {0, 1};
 	
 	m_event_callback = event_callback;
 		
@@ -470,7 +477,7 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 	
 	if(!is_central)
 	{
-		addr_prefix[DATA_PIPE] = periph_num;
+		addr_prefix[0] = periph_num;
 	}
 	
 	err = esb_set_prefixes(addr_prefix, sizeof(addr_prefix));
@@ -478,7 +485,7 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 		return err;
 	}
 	
-	err = esb_enable_pipes(1 << DATA_PIPE );  //only enabled pipe 0 
+	err = esb_enable_pipes(1 << DATA_PIPE );  //only enabled data pipe
 	if (err) {
 		return err;
 	}	
@@ -516,8 +523,11 @@ void radio_fetch_packet(radio_data_t * rcv_data)
 	esb_read_rx_payload(&rx_payload);
 	
 	rcv_data->length = rx_payload.length;
-	rcv_data->periph_num = esb_get_addr_prefix(rx_payload.pipe); 
+	rcv_data->periph_num = esb_get_addr_prefix(DATA_PIPE); 
 	memcpy(rcv_data->data, rx_payload.data, rx_payload.length);	
+	
+	LOG_DBG("rcv data = %d, %d, %d", rcv_data->data[0], rcv_data->data[1], rcv_data->data[2]);
+	LOG_DBG("rcv length = %d", rcv_data->length);
 	
 }	
 
