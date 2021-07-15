@@ -464,15 +464,10 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 				
 				if(periph_cnt== NUM_OF_PERIPH-1)
 				{
-						//gpio_pin_set(dbg_port,dbg_pins[periph_cnt], 0);
+						periph_cnt = (periph_cnt +1) % NUM_OF_PERIPH;
+						
+						gpio_pin_set(dbg_port,dbg_pins[periph_cnt], 0);
 				
-			
-					
-					chan_cnt= (chan_cnt +1) % RADIO_CHAN_TAB_SIZE;
-				
-					esb_set_rf_channel(m_radio_chan_tab[chan_cnt]);
-					
-					
 				}
 			
 				break;
@@ -535,14 +530,14 @@ if(periph_cnt!=2)
 				
 			
 				//JS Modify: 10/29/2020, switch to next rf chan for next round
-/*
+
 				if(periph_cnt==0)
 				{	
 					chan_cnt = (chan_cnt +1) % RADIO_CHAN_TAB_SIZE;		
 					esb_set_rf_channel(m_radio_chan_tab[chan_cnt]);
 				}
 				else		
-*/							
+							
 				if (periph_cnt==1) //periph_cnt =1
 				{
 					if ( (periph_on_sync[0]?tmp_central_success[0]:true) && (periph_on_sync[1]?tmp_central_success[1]: true) )
@@ -682,7 +677,7 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 	config.bitrate                  = ESB_BITRATE_1MBPS_BLE;
 	config.event_handler            = (is_central)?nrf_esb_ptx_event_handler:nrf_esb_prx_event_handler;
 	config.mode                     = (is_central)?ESB_MODE_PTX:ESB_MODE_PRX;
-	config.selective_auto_ack       = true; //(is_central)?true:false;
+	config.selective_auto_ack       = true; 	
 	config.tx_output_power          = tx_power;
 	config.retransmit_count         = RETRAN_CNT;
 	//config.tx_mode					= ESB_TXMODE_MANUAL;  //JS Modify: 1/20/2021 , Use manual tx start
