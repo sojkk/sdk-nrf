@@ -38,6 +38,7 @@ typedef enum
 	RADIO_START_TX_POLL_EVT,
 	RADIO_START_RX_SCAN_EVT,
 	RADIO_CENTRAL_DATA_RCV_EVT,
+	RADIO_CENTRAL_BCT_SND_EVT,
 	RADIO_PERIPH_DATA_SND_EVT,
 	RADIO_PUT_PACKET_EVT
 
@@ -47,7 +48,7 @@ typedef struct
 {
     cmd_t 	data_hdr;
     uint8_t 	data_len;
-    uint8_t 	data[65];
+    uint8_t 	data[100];
     
 }ipc_cmd_msg_t;
 
@@ -55,7 +56,7 @@ typedef struct
 {
     evt_t 	data_hdr;
     uint8_t 	data_len;
-    uint8_t 	data[65];
+    uint8_t 	data[100];
     
 }ipc_evt_msg_t;
 

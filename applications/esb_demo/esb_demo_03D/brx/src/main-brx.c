@@ -127,7 +127,7 @@ void radio_evt_cb(uint8_t radio_event)
 void main(void)
 {
 	
-	LOG_INF("Enhanced ShockBurst prx sample");
+	LOG_INF("Enhanced ShockBurst brx sample");
 
 	lf_clock_start();
 

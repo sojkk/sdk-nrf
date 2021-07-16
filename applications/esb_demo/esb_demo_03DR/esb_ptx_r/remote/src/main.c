@@ -24,8 +24,6 @@
 
 #define APP_TASK_STACK_SIZE (1024)
 
-#define	BROADCAST_SIZE	90  //bytes
-
 
 K_THREAD_STACK_DEFINE(thread_stack, APP_TASK_STACK_SIZE);
 static struct k_thread thread_data;
@@ -39,19 +37,6 @@ static K_SEM_DEFINE(data_rx_sem, 0, 1);
 static int ep_id;
 
 static radio_data_t rx_buf;
-
-static uint8_t data_buf[BROADCAST_SIZE+1];
-
-uint8_t broadcast_packet[] = { 
-								90, 0, 88, 87, 86, 85, 84, 83, 82, 81,
-								80, 79, 78, 77, 76, 75, 74, 73, 72, 71,
-								70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 
-								60, 59, 58, 57, 56, 55, 54, 53, 52, 51,
-								50, 49, 48, 47, 46, 45, 44, 43, 42, 41,
-								40, 39, 38, 37, 36, 35, 34, 33, 32, 31,
-								30, 29, 28, 27, 26, 25, 24, 23, 22, 21,
-								20, 19, 18, 17, 16, 15, 14, 13, 12, 11,
-								10,  9,  8,  7,  6,  5,  4,  3,  2,  1 };
 
 static int send_message(void);
 
@@ -81,7 +66,23 @@ void radio_evt_cb(uint8_t radio_event)
         }
 
 	}
-	
+	else if(radio_event ==RADIO_CENTRAL_BCT_SENT)
+	{
+		tx_event.data_hdr = RADIO_CENTRAL_BCT_SND_EVT; 		
+		tx_event.data_len = 1;
+		tx_event.data[0]  = 0;		
+		
+		status = send_message();
+		
+		  //printk("esb_event_handler: radio_event =RADIO_CENTRAL_BCT_SENT\n");
+		
+        if (status < 0) {
+
+            printk("esb_event_handler: send_message failed with status %d\n", status);
+
+        }
+		
+	}	
 	else if(radio_event == RADIO_PERIPH_DATA_SENT)
 	{
 			
@@ -200,6 +201,8 @@ static void receive_message(void)
 			tx_event.data_len	= 1;
 			tx_event.data[0]=0;
 			
+			//printk("CPUNET: radio put packet sent\n");
+			
 			break;
 		
 		default :
@@ -217,13 +220,6 @@ static void receive_message(void)
 static int send_message(void)
 {
 	return rpmsg_service_send(ep_id, &tx_event, sizeof(tx_event));
-}
-
-
-static void data_init(void)
-{
-	data_buf[0] = BCT_PERIPH_NUM;
-	memcpy(&data_buf[1], broadcast_packet, BROADCAST_SIZE);	
 }
 
 
@@ -282,7 +278,6 @@ void lf_clock_start(void)
 
 void main(void)
 {
-	data_init();
 
 	lf_clock_start();
 	

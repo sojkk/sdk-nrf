@@ -26,6 +26,7 @@
 #define LED_ON    0
 #define LED_OFF   1
 
+#define	BROADCAST_SIZE	90  //bytes
 
 K_THREAD_STACK_DEFINE(thread_stack, APP_TASK_STACK_SIZE);
 static struct k_thread thread_data;
@@ -54,6 +55,19 @@ struct rpmsg_endpoint my_ept;
 struct rpmsg_endpoint *ep = &my_ept;
 
 static uint8_t rcv_data_buf[65];
+
+static uint8_t data_buf[BROADCAST_SIZE+1];
+
+uint8_t broadcast_packet[] = { 
+								90, 0, 88, 87, 86, 85, 84, 83, 82, 81,
+								80, 79, 78, 77, 76, 75, 74, 73, 72, 71,
+								70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 
+								60, 59, 58, 57, 56, 55, 54, 53, 52, 51,
+								50, 49, 48, 47, 46, 45, 44, 43, 42, 41,
+								40, 39, 38, 37, 36, 35, 34, 33, 32, 31,
+								30, 29, 28, 27, 26, 25, 24, 23, 22, 21,
+								20, 19, 18, 17, 16, 15, 14, 13, 12, 11,
+								10,  9,  8,  7,  6,  5,  4,  3,  2,  1 };
 
 
 
@@ -133,11 +147,26 @@ static int send_message(void)
 	}
 	else if (application_state == APP_CFG)	
 	{
+		tx_cmd.data_hdr		= RADIO_PUT_PACKET_CMD;
+		tx_cmd.data_len		= sizeof(data_buf);
+		memcpy(tx_cmd.data, data_buf, sizeof(data_buf));
+	}
+	else if (application_state == APP_CFG2)	
+	{
 		tx_cmd.data_hdr		= RADIO_START_TX_POLL_CMD;
 		tx_cmd.data_len		= 1;
 		tx_cmd.data[0]		= POLL_TICKS;
 	}
-	
+	else if (application_state == APP_OPT)
+	{
+
+        data_buf[2]++;
+		
+		tx_cmd.data_hdr		= RADIO_PUT_PACKET_CMD;
+		tx_cmd.data_len		= sizeof(data_buf);
+		memcpy(tx_cmd.data , data_buf, sizeof(data_buf));
+		
+	}	
 	return rpmsg_service_send(ep_id, &tx_cmd, sizeof(tx_cmd));
 }
 
@@ -166,7 +195,24 @@ static void receive_message(void)
 			}
 	
 			break;
-			
+		
+		case RADIO_PUT_PACKET_EVT:
+		
+		if(application_state == APP_CFG)
+		{
+			if ( (err= rx_evt.data[0]) !=0)	//error occurs
+			{
+				printk("CPUAPP: radio put packet error %d\n", err);
+			}
+			else
+			{
+				application_state = APP_CFG2;  //radio configured
+				send_message();
+				printk("CPUAPP: radio put packet success\n");
+			}
+		}
+		
+		break;			
 			
 			
 		case RADIO_START_TX_POLL_EVT:
@@ -188,13 +234,29 @@ static void receive_message(void)
 			
 	
 				memcpy(rcv_data_buf, rx_evt.data, rx_evt.data_len);
-
-                                leds_update(rcv_data_buf[2]);
+				
+				leds_update(rcv_data_buf[2]);
 				/*
 				printk("CPUAPP: radio data fetched, periph_num = %d\n", rcv_data_buf[0] );
 				printk("data received :	%d, %d, %d, %d\n", rcv_data_buf[1],\
 						rcv_data_buf[2], rcv_data_buf[3], rcv_data_buf[4]);
 				*/
+			break;
+		
+		case RADIO_CENTRAL_BCT_SND_EVT:
+		
+		
+			if ( (err= rx_evt.data[0]) !=0)	//error occurs
+			{
+				printk("CPUAPP: radio peripheral data sent error %d\n", err);
+			}
+			else
+			{
+				application_state = APP_OPT; // ready for data sent
+				send_message();
+				//printk("CPUAPP: Ready for data sent\n");
+			}
+			
 			break;
 		
 		default:
@@ -209,6 +271,11 @@ static void receive_message(void)
 }
 
 
+static void data_init(void)
+{
+	data_buf[0] = BCT_PERIPH_NUM;
+	memcpy(&data_buf[1], broadcast_packet, BROADCAST_SIZE);	
+}
 
 
 void app_task(void *arg1, void *arg2, void *arg3)
@@ -238,11 +305,16 @@ void app_task(void *arg1, void *arg2, void *arg3)
 }
 	
 	
+
 	
 
 void main(void)
 {
+	
 	gpios_init();
+	
+	data_init();
+	
 
 	printk("Starting application thread!\n");
 	k_thread_create(&thread_data, thread_stack, APP_TASK_STACK_SIZE,

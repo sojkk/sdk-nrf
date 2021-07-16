@@ -208,13 +208,13 @@ static void receive_message(void)
 		{
 			if ( (err= rx_evt.data[0]) !=0)	//error occurs
 			{
-				printk("CPUAPP: radio initialize error %d\n", err);
+				printk("CPUAPP: radioput packet error %d\n", err);
 			}
 			else
 			{
 				application_state = APP_CFG2;  //radio configured
 				send_message();
-				printk("CPUAPP: radio initialized\n");
+				printk("CPUAPP: radio put packet success\n");
 			}
 		}
 		
