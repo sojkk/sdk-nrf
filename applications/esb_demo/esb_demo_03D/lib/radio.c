@@ -441,7 +441,7 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 	struct esb_config config        = ESB_DEFAULT_CONFIG;
 	
 	config.protocol                 = ESB_PROTOCOL_ESB_DPL;
-	config.bitrate                  = ESB_BITRATE_1MBPS;
+	config.bitrate                  = ESB_BITRATE_1MBPS_BLE;
 	config.event_handler            = (is_central)?nrf_esb_ptx_event_handler:nrf_esb_prx_event_handler;
 	config.mode                     = (is_central)?ESB_MODE_PTX:ESB_MODE_PRX;
 	config.selective_auto_ack       = true; 

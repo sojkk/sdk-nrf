@@ -104,6 +104,9 @@ void radio_evt_cb(uint8_t radio_event)
 	
 	if(radio_event == RADIO_PERIPH_DATA_RECEIVED)
 	{
+		//For test purpose only
+		//gpio_pin_set(led_port,  DT_GPIO_PIN(DT_ALIAS(led1), gpios), 1);
+		
 		radio_fetch_packet(&rx_payload);
 
         leds_update(rx_payload.data[1]);     
@@ -112,6 +115,8 @@ void radio_evt_cb(uint8_t radio_event)
 		
 		LOG_INF("length = %d, periph_num = %d",  rx_payload.length, rx_payload.periph_num);
 		
+		//For test purpose only
+		//gpio_pin_set(led_port,  DT_GPIO_PIN(DT_ALIAS(led1), gpios), 0);
 	}
 
 }
