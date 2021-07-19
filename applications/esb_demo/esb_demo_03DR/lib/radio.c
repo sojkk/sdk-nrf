@@ -266,14 +266,14 @@ static void rtc_rx_event_handler(void)
 static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 {	
 	//uint16_t success_rate;
-	
+	printk("radio: ptx evet handler\n");	
 	switch (p_event->evt_id)
     {
         case ESB_EVENT_TX_SUCCESS:
 		{
 				LOG_DBG("TX SUCCESS EVENT");	                                                          
 				__NOP();
-								
+							
 									
 				if(periph_cnt == BCT_PERIPH_NUM)
 				{	
@@ -345,7 +345,7 @@ static void nrf_esb_prx_event_handler(struct esb_evt const *p_event)
 	switch (p_event->evt_id)
     {
         case ESB_EVENT_TX_SUCCESS:
-				LOG_DBG("TX SUCCESS EVENT");							
+				LOG_DBG("TX SUCCESS EVENT");				
 				break;
         case ESB_EVENT_TX_FAILED:
 				LOG_DBG("TX FAILED EVENT");
@@ -453,6 +453,7 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 	bct_rcv_flag = false;
 
 
+	printk("radio: init success\n");
 
 /********** nRF3540 radio power with additional 3dB *******/	
 

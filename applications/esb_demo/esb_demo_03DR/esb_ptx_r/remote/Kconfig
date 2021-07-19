@@ -12,7 +12,7 @@ menu "Enhanced ShockBurst: Transmitter"
 
 config APP_LOG_LEVEL
 	int "Log level for the ESB sample"
-	default 0
+	default 4
 
 endmenu
 

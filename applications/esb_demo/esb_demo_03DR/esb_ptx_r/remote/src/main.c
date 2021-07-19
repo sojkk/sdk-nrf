@@ -190,7 +190,7 @@ static void receive_message(void)
 		
 		case RADIO_PUT_PACKET_CMD:
 		
-			rx_buf.length = rx_cmd.data_len;
+			rx_buf.length = rx_cmd.data_len -1;
 			rx_buf.periph_num = rx_cmd.data[0];
 			memcpy(rx_buf.data, &rx_cmd.data[1], rx_cmd.data_len);			
 		
@@ -200,8 +200,9 @@ static void receive_message(void)
 			tx_event.data_hdr	= RADIO_PUT_PACKET_EVT;
 			tx_event.data_len	= 1;
 			tx_event.data[0]=0;
+			//printk("CPUNET: radio put packet cmd, periph_num = %d, length = %d\n", rx_buf.periph_num, rx_buf.length);
+			//printk("CPUNET: radio put packet cmd, data %d, %d, %d\n", rx_buf.data[0], rx_buf.data[1], rx_buf.data[2]);
 			
-			//printk("CPUNET: radio put packet sent\n");
 			
 			break;
 		

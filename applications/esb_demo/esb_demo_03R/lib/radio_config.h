@@ -21,7 +21,7 @@
 #define DATA_SENDING_P5             31
 #endif
 
-#define NUM_OF_PERIPH               2
+#define NUM_OF_PERIPH               3//2  <--7/19/21 test
 
 #define	PAIRING_PIPE                0
 #define	DATA_PIPE                   1
@@ -37,7 +37,7 @@
 
 #define	RETRAN_CNT                  0
 
-#define ADJ                         25
+#define ADJ                         30//25 <--7/19/21 test
 #define POLL_TICKS                  30 //30.5 us  PER TICK  
 
 

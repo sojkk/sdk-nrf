@@ -166,6 +166,9 @@ static int send_message(void)
 		tx_cmd.data_len		= sizeof(data_buf);
 		memcpy(tx_cmd.data , data_buf, sizeof(data_buf));
 		
+		//printk("CPUAPP: APP_OPT data send\n");
+		//printk("CPUAPP: APP_OPT data_buf = %d, %d, %d\n", data_buf[0], data_buf[1], data_buf[2]);
+		
 	}	
 	return rpmsg_service_send(ep_id, &tx_cmd, sizeof(tx_cmd));
 }
