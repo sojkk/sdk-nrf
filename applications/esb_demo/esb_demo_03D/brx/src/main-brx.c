@@ -102,7 +102,7 @@ void radio_evt_cb(uint8_t radio_event)
 {
 	radio_data_t rx_payload;
 	
-	if(radio_event == RADIO_PERIPH_DATA_RECEIVED)
+	if(radio_event == RADIO_PERIPH_BCT_RECEIVED)
 	{
 		//For test purpose only
 		//gpio_pin_set(led_port,  DT_GPIO_PIN(DT_ALIAS(led1), gpios), 1);

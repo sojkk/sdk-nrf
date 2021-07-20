@@ -359,7 +359,7 @@ static void nrf_esb_prx_event_handler(struct esb_evt const *p_event)
 		if(bct_rcv_flag)
 		{
 			           										
-			m_event_callback(RADIO_PERIPH_DATA_RECEIVED);	
+			m_event_callback(RADIO_PERIPH_BCT_RECEIVED);	
 			
 		
 		
