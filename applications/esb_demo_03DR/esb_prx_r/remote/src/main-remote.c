@@ -94,13 +94,30 @@ void radio_evt_cb(uint8_t radio_event)
 				
         if (status < 0) {
 
-            printk("esb_event_handler: send_message failed with status %d\n", status);
+            printk("RADIO_PERIPH_DATA_SND_EVT: send_message failed with status %d\n", status);
 
         }
 
 		   
 	}
-	
+	else if (radio_event == RADIO_PERIPH_BCT_RECEIVED)
+	{
+		radio_fetch_packet(&rx_buf);
+		
+		tx_event.data_hdr = RADIO_PERIPH_BCT_RCV_EVT; 		
+		tx_event.data_len = rx_buf.length;
+		tx_event.data[0]  = rx_buf.periph_num;
+		memcpy(&tx_event.data[1], rx_buf.data, rx_buf.length);
+						
+		status = send_message();
+				
+        if (status < 0) {
+
+            printk("RADIO_PERIPH_BCT_RCV_EVT: send_message failed with status %d\n", status);
+
+        }
+		
+	}
 	
 
 }

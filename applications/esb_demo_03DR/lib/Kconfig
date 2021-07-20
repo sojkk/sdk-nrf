@@ -8,7 +8,7 @@
 
 config ESB_MAX_PAYLOAD_LENGTH
 	int "Maximum payload size"
-	default 70
+	default 130
 	range 1 252
 	help
 	  The maximum size of the payload.

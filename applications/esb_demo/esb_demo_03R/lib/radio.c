@@ -235,6 +235,8 @@ static void rtc_rx_event_handler(void)
 static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 {	
 	//uint16_t success_rate;
+	printk("radio: ptx event handler, event = %d\n", p_event->evt_id);	
+	printk("radio: ptx event handler, periph cnt = %u\n", periph_cnt);
 	
 	switch (p_event->evt_id)
     {
@@ -272,6 +274,9 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 		if (p_event->evt_id != ESB_EVENT_TX_SUCCESS)   // TX_SUCCESS deplicates with DATA_RECEIVED
 		{	
 				periph_cnt = (periph_cnt +1) % NUM_OF_PERIPH; // periph_cnt = [0..(NUM_OF_PERIPH-1)]
+				
+				printk("NUM_OF_PERIPH = %u , periph_cnt = %u \n", NUM_OF_PERIPH, periph_cnt );
+				
 				//JS Modify: 10/29/2020, switch to next rf chan for next round
 			chan_cnt[periph_cnt] = (chan_cnt[periph_cnt] +1) % RADIO_CHAN_TAB_SIZE;		
 			esb_set_rf_channel(m_radio_chan_tab[chan_cnt[periph_cnt]]);

@@ -266,7 +266,8 @@ static void rtc_rx_event_handler(void)
 static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 {	
 	//uint16_t success_rate;
-	printk("radio: ptx evet handler\n");	
+	//printk("radio: ptx event handler, event = %d\n", p_event->evt_id);	
+	//printk("radio: ptx event handler, periph cnt = %u\n", periph_cnt);
 	switch (p_event->evt_id)
     {
         case ESB_EVENT_TX_SUCCESS:
@@ -317,6 +318,7 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 		{	
 			periph_cnt = (periph_cnt +1) % NUM_OF_PERIPH; // periph_cnt = [0..(NUM_OF_PERIPH-1)]
 
+			//printk("NUM_OF_PERIPH = %u , periph_cnt = %u \n", NUM_OF_PERIPH, periph_cnt );
 			//JS Modify: 10/29/2020, switch to next rf chan for next round
 			if(periph_cnt==0)
 			{	
@@ -359,7 +361,7 @@ static void nrf_esb_prx_event_handler(struct esb_evt const *p_event)
 		if(bct_rcv_flag)
 		{
 			           										
-			m_event_callback(RADIO_PERIPH_DATA_RECEIVED);	
+			m_event_callback(RADIO_PERIPH_BCT_RECEIVED);	
 			
 		
 		
@@ -441,7 +443,7 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 	struct esb_config config        = ESB_DEFAULT_CONFIG;
 	
 	config.protocol                 = ESB_PROTOCOL_ESB_DPL;
-	config.bitrate                  = ESB_BITRATE_1MBPS;
+	config.bitrate                  = ESB_BITRATE_1MBPS_BLE;
 	config.event_handler            = (is_central)?nrf_esb_ptx_event_handler:nrf_esb_prx_event_handler;
 	config.mode                     = (is_central)?ESB_MODE_PTX:ESB_MODE_PRX;
 	config.selective_auto_ack       = true; 
@@ -452,8 +454,6 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 
 	bct_rcv_flag = false;
 
-
-	printk("radio: init success\n");
 
 /********** nRF3540 radio power with additional 3dB *******/	
 

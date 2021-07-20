@@ -23,6 +23,8 @@
 #include "radio_ipc.h"
 
 #define APP_TASK_STACK_SIZE (1024)
+
+
 K_THREAD_STACK_DEFINE(thread_stack, APP_TASK_STACK_SIZE);
 static struct k_thread thread_data;
 
@@ -34,9 +36,7 @@ static K_SEM_DEFINE(data_rx_sem, 0, 1);
 
 static int ep_id;
 
-
 static radio_data_t rx_buf;
-
 
 static int send_message(void);
 
@@ -66,7 +66,23 @@ void radio_evt_cb(uint8_t radio_event)
         }
 
 	}
-	
+	else if(radio_event ==RADIO_CENTRAL_BCT_SENT)
+	{
+		tx_event.data_hdr = RADIO_CENTRAL_BCT_SND_EVT; 		
+		tx_event.data_len = 1;
+		tx_event.data[0]  = 0;		
+		
+		status = send_message();
+		
+		  //printk("esb_event_handler: radio_event =RADIO_CENTRAL_BCT_SENT\n");
+		
+        if (status < 0) {
+
+            printk("esb_event_handler: send_message failed with status %d\n", status);
+
+        }
+		
+	}	
 	else if(radio_event == RADIO_PERIPH_DATA_SENT)
 	{
 			
@@ -78,13 +94,30 @@ void radio_evt_cb(uint8_t radio_event)
 				
         if (status < 0) {
 
-            printk("esb_event_handler: send_message failed with status %d\n", status);
+            printk("RADIO_PERIPH_DATA_SND_EVT: send_message failed with status %d\n", status);
 
         }
 
 		   
 	}
-	
+	else if (radio_event == RADIO_PERIPH_BCT_RECEIVED)
+	{
+		radio_fetch_packet(&rx_buf);
+		
+		tx_event.data_hdr = RADIO_PERIPH_BCT_RCV_EVT; 		
+		tx_event.data_len = rx_buf.length;
+		tx_event.data[0]  = rx_buf.periph_num;
+		memcpy(&tx_event.data[1], rx_buf.data, rx_buf.length);
+						
+		status = send_message();
+				
+        if (status < 0) {
+
+            printk("RADIO_PERIPH_BCT_RCV_EVT: send_message failed with status %d\n", status);
+
+        }
+		
+	}
 	
 
 }
@@ -174,7 +207,7 @@ static void receive_message(void)
 		
 		case RADIO_PUT_PACKET_CMD:
 		
-			rx_buf.length = rx_cmd.data_len;
+			rx_buf.length = rx_cmd.data_len -1;
 			rx_buf.periph_num = rx_cmd.data[0];
 			memcpy(rx_buf.data, &rx_cmd.data[1], rx_cmd.data_len);			
 		
@@ -184,6 +217,9 @@ static void receive_message(void)
 			tx_event.data_hdr	= RADIO_PUT_PACKET_EVT;
 			tx_event.data_len	= 1;
 			tx_event.data[0]=0;
+			//printk("CPUNET: radio put packet cmd, periph_num = %d, length = %d\n", rx_buf.periph_num, rx_buf.length);
+			//printk("CPUNET: radio put packet cmd, data %d, %d, %d\n", rx_buf.data[0], rx_buf.data[1], rx_buf.data[2]);
+			
 			
 			break;
 		
@@ -213,7 +249,6 @@ void app_task(void *arg1, void *arg2, void *arg3)
 	ARG_UNUSED(arg3);
 	
 	int status = 0;
-
      
 	printk("\r\nRPMsg Service [remote] started\r\n");
 
@@ -242,9 +277,13 @@ void app_task(void *arg1, void *arg2, void *arg3)
 
 void lf_clock_start(void)
 {
-
-    NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_LFXO;
-
+	
+#if defined(CONFIG_SOC_SERIES_NRF53X)
+	NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_LFRC;
+#else
+	NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_RC;
+#endif
+   
   //Start LFCLK
     NRF_CLOCK->EVENTS_LFCLKSTARTED = 0;
     NRF_CLOCK->TASKS_LFCLKSTART = 1;

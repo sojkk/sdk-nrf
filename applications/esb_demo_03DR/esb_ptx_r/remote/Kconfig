@@ -6,9 +6,9 @@
 
 source "Kconfig.zephyr"
 
-rsource "../lib/Kconfig"
+rsource "../../lib/Kconfig"
 
-menu "Enhanced ShockBurst: Receiver"
+menu "Enhanced ShockBurst: Transmitter"
 
 config APP_LOG_LEVEL
 	int "Log level for the ESB sample"

@@ -27,7 +27,7 @@ project(rpmsg_service)
 
 enable_language(C ASM)
 
-target_sources(app PRIVATE src/main.c)
+target_sources(app PRIVATE src/main-brx.c)
 
 
 include(ExternalProject)
