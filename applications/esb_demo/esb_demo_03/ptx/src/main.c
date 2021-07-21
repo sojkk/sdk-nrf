@@ -35,9 +35,13 @@ static const struct device *led_port;
 void lf_clock_start(void)
 {
 
-  //NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_Xtal;
-    NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_LFXO;
-
+#if defined(CONFIG_SOC_SERIES_NRF53X)
+	NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_LFXO;
+#else
+	NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_Xtal;
+#endif
+    
+    
   //Start LFCLK
     NRF_CLOCK->EVENTS_LFCLKSTARTED = 0;
     NRF_CLOCK->TASKS_LFCLKSTART = 1;
