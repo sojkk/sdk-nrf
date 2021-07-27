@@ -1,5 +1,4 @@
 #include "esb_timeslot.h"
-#include "nrf_esb.h"
 
 #include <kernel.h>
 #include <sys/printk.h>
@@ -12,15 +11,13 @@
 
 
 /**@brief The NRF RADIO multitimer. */
-#define NRF_RADIO_MULTITIMER          NRF_TIMER0
-#define NRF_RADIO_MULTITIMER_IRQn     TIMER0_IRQn
+#define RADIO_MULTITIMER          NRF_TIMER0
+#define RADIO_MULTITIMER_IRQn     TIMER0_IRQn
 
 #define TIMESLOT_BEGIN_IRQn         COMP_LPCOMP_IRQn
-#define TIMESLOT_BEGIN_IRQHandler   COMP_LPCOMP_IRQHandler
-#define TIMESLOT_BEGIN_IRQPriority  5 //3
+#define TIMESLOT_BEGIN_IRQPriority  5
 #define TIMESLOT_END_IRQn           QDEC_IRQn
-#define TIMESLOT_END_IRQHandler     QDEC_IRQHandler
-#define TIMESLOT_END_IRQPriority    5 //3
+#define TIMESLOT_END_IRQPriority    5
 
 
 
@@ -87,9 +84,9 @@ static volatile enum
 
 
 
-static nrf_esb_config_t nrf_esb_config         = NRF_ESB_DEFAULT_CONFIG;
+static struct esb_config         = ESB_DEFAULT_CONFIG;
 
-static nrf_esb_payload_t rx_buf;	
+static struct esb_payload rx_buf;	
 
 static uint8_t base_addr_0[4] =  BASE_ADDR_0;
 static uint8_t base_addr_1[4] =  BASE_ADDR_1;
@@ -97,6 +94,14 @@ static uint8_t addr_prefix[3] =  {PREFIX_ADDR_0, PREFIX_ADDR_1, PREFIX_ADDR_2};
 
 
 static callback_t callback;
+
+
+/**Constants for timeslot API
+*/
+
+static mpsl_timeslot_signal_return_param_t signal_callback_return_param;
+static uint32_t m_total_timeslot_length = 0;
+void RADIO_IRQHandler(void);
 
 
 static void error(void)
@@ -109,90 +114,83 @@ static void error(void)
 }
 
 
-
-/**Constants for timeslot API
-*/
-static nrf_radio_request_t  m_timeslot_request;
-
-static nrf_radio_signal_callback_return_param_t signal_callback_return_param;
-static uint32_t m_total_timeslot_length = 0;
-void RADIO_IRQHandler(void);
-
-static void nrf_esb_event_handler(nrf_esb_evt_t const * p_event)
+static void radio_event_handler(nrf_esb_evt_t const * p_event)
 {
      switch (p_event->evt_id)
     {
-        case NRF_ESB_EVENT_TX_SUCCESS:
+        case ESB_EVENT_TX_SUCCESS:
 
             break;
-        case NRF_ESB_EVENT_TX_FAILED:
+        case ESB_EVENT_TX_FAILED:
 					
             break;   
-        case NRF_ESB_EVENT_RX_RECEIVED:
+        case ESB_EVENT_RX_RECEIVED:
 					
-				NRF_LOG_DEBUG("ESB Event : RX_RECEIVED\r\n");
-				APP_ERROR_CHECK ((ret_code_t) nrf_esb_read_rx_payload(&rx_buf) );
-        callback(rx_buf.data);
+			LOG_DBG("ESB Event : RX_RECEIVED\r\n");
+			esb_read_rx_payload(&rx_buf);
+			callback(rx_buf.data);
 			
             break;					
     }
 }
 
-void esb_config( void )
+void radio_config( void )
 {
-    nrf_esb_config.protocol                 = NRF_ESB_PROTOCOL_ESB_DPL;
-    nrf_esb_config.event_handler            = nrf_esb_event_handler;
-    nrf_esb_config.mode                     = NRF_ESB_MODE_PRX;
-    nrf_esb_config.selective_auto_ack       = false;
-	  nrf_esb_config.retransmit_count         = 0;
+    esb_config.protocol                 = ESB_PROTOCOL_ESB_DPL;
+    esb_config.event_handler            = radio_event_handler;
+    esb_config.mode                     = ESB_MODE_PRX;
+    esb_config.selective_auto_ack       = false;
+	esb_config.retransmit_count         = 0;
 	
-	  rx_buf.pipe = DATA_PIPE;
+	rx_buf.pipe = DATA_PIPE;
 }
 
-uint32_t esb_init(void)
+int radio_init(void)
 {
-    uint32_t err_code;
+    int err;
 	
-    err_code = nrf_esb_init(&nrf_esb_config);
-    VERIFY_SUCCESS(err_code);
-		
-		err_code = nrf_esb_set_rf_channel(RF_CHANNEL);
-		VERIFY_SUCCESS(err_code);
-
-    err_code = nrf_esb_set_base_address_0(base_addr_0);
-    VERIFY_SUCCESS(err_code);
-
-    err_code = nrf_esb_set_base_address_1(base_addr_1);
-    VERIFY_SUCCESS(err_code);
-
-    err_code = nrf_esb_set_prefixes(addr_prefix, 3);
-    VERIFY_SUCCESS(err_code);
-		
+	err = esb_init(&esb_config);
+	if (err) {
+		return err;
+	}
 	
+	err = esb_set_rf_channel(RF_CHANNEL);
+	if (err) {
+		return err;
+	}
 
-	  return err_code;
+	err = esb_set_base_address_0(bas_addr_0);
+	if (err) {
+		return err;
+	}
+
+	err = esb_set_base_address_1(bas_addr_1);
+	if (err) {
+		return err;
+	}
+	
+	
+	err = esb_set_prefixes(addr_prefix, sizeof(addr_prefix));
+	if (err) {
+		return err;
+	}
+
+	return 0;
 
 }	
 
+/**@brief Request next timeslot event in earliest configuration
+ */
 
-/* Timeslot requests */
 static mpsl_timeslot_request_t timeslot_request_earliest = {
 	.request_type = MPSL_TIMESLOT_REQ_TYPE_EARLIEST,
-	.params.earliest.hfclk = MPSL_TIMESLOT_HFCLK_CFG_NO_GUARANTEE,
+	.params.earliest.hfclk = MPSL_TIMESLOT_HFCLK_CFG_XTAL_GUARANTEED,
 	.params.earliest.priority = MPSL_TIMESLOT_PRIORITY_NORMAL,
-	.params.earliest.length_us = TS_LENGTH_US,
+	.params.earliest.length_us = TIMESLOT_LENGTH_US,
 	.params.earliest.timeout_us = 1000000
 };
 
-static mpsl_timeslot_request_t timeslot_config_earliest = {
-	.request_type = MPSL_TIMESLOT_REQ_TYPE_EARLIEST,
-	.params.normal.hfclk = MPSL_TIMESLOT_HFCLK_CFG_NO_GUARANTEE,
-	.params.normal.priority = MPSL_TIMESLOT_PRIORITY_NORMAL,
-	.params.normal.length_us = TS_LENGTH_US
-	.params.earliest.timeout_us = 1000000
-};
 
-static mpsl_timeslot_signal_return_param_t signal_callback_return_param;
 
 
 /**@brief Timeslot event handler
@@ -262,7 +260,7 @@ static mpsl_timeslot_signal_return_param_t *mpsl_timeslot_callback(mpsl_timeslot
 				}
 				// Schedule next timeslot
 				configure_next_event_earliest();
-				signal_callback_return_param.params.request.p_next = &m_timeslot_request;
+				signal_callback_return_param.params.request.p_next = &timeslot_request_earliest;
 				signal_callback_return_param.callback_action = NRF_RADIO_SIGNAL_CALLBACK_ACTION_REQUEST_AND_END;
 									
 		}
@@ -325,6 +323,10 @@ static mpsl_timeslot_signal_return_param_t *mpsl_timeslot_callback(mpsl_timeslot
 	case MPSL_TIMESLOT_SIGNAL_SESSION_IDLE:
 	
 	
+		err = mpsl_timeslot_session_close(session_id);
+		if (err) {
+			error();
+		}
 	
 		break;
 		
@@ -343,6 +345,7 @@ static mpsl_timeslot_signal_return_param_t *mpsl_timeslot_callback(mpsl_timeslot
 		break;
 		
 	case MPSL_TIMESLOT_SIGNAL_SESSION_CLOSED:
+		//No implementation needed, session ended
 		break;
 		
 	default:
@@ -400,22 +403,26 @@ void timeslot_sd_stop(void)
   */
 void TIMESLOT_END_IRQHandler(void)
 {
-    uint32_t err_code;
-    ESB_TIMESLOT_DEBUG_PIN_SET(ESB_TIMESLOT_DBG_PIN_DISABLE);
+    int err;
+    //ESB_TIMESLOT_DEBUG_PIN_SET(ESB_TIMESLOT_DBG_PIN_DISABLE);
 
-    // Timeslot is about to end: stop UESB
-	 if(m_state == STATE_RX)
-	 {	 
-    err_code= nrf_esb_stop_rx();
-	  APP_ERROR_CHECK(err_code);
+    // Timeslot is about to end: stop ESB
+	if(m_state == STATE_RX)
+	{	 
+		err = esb_stop_rx();
+		if (err) {
+			error();
+		}
 		 
-		err_code= nrf_esb_flush_rx();
-    APP_ERROR_CHECK(err_code); 
+		err = esb_flush_rx();
+		if (err) {
+			error();
+		}
 		 
-    err_code= nrf_esb_disable();
-    APP_ERROR_CHECK(err_code);
-
-    m_total_timeslot_length = 0; 
+		err = esb_disable();
+		if (err) {
+			error();
+		}
 		 
 		m_state = STATE_IDLE; 
 	 }
@@ -424,8 +431,8 @@ void TIMESLOT_END_IRQHandler(void)
 	
     m_total_timeslot_length = 0;
     
-    ESB_TIMESLOT_DEBUG_PIN_CLEAR(ESB_TIMESLOT_DBG_PIN_DISABLE);
-    ESB_TIMESLOT_DEBUG_PIN_CLEAR(ESB_TIMESLOT_DBG_PIN_RADIO_TIMESLOT);
+    //ESB_TIMESLOT_DEBUG_PIN_CLEAR(ESB_TIMESLOT_DBG_PIN_DISABLE);
+    //ESB_TIMESLOT_DEBUG_PIN_CLEAR(ESB_TIMESLOT_DBG_PIN_RADIO_TIMESLOT);
 }
 
 /**@brief IRQHandler used for execution context management. 
@@ -435,29 +442,30 @@ void TIMESLOT_END_IRQHandler(void)
 void TIMESLOT_BEGIN_IRQHandler(void)
 {
    
-	ESB_TIMESLOT_DEBUG_PIN_SET(ESB_TIMESLOT_DBG_PIN_RADIO_TIMESLOT);
+	//ESB_TIMESLOT_DEBUG_PIN_SET(ESB_TIMESLOT_DBG_PIN_RADIO_TIMESLOT);
 	
-	 CRITICAL_REGION_ENTER();
-   {
+	//CRITICAL_REGION_ENTER();
+	{
 	
-	     if (m_state == STATE_IDLE)
-       {
+		if (m_state == STATE_IDLE)
+		{
 				 
-			    (void) esb_init();
+			(void) radio_init();
 			
-	     }
-		
-		  
-		
-		  uint32_t err_code = nrf_esb_start_rx();
-      APP_ERROR_CHECK(err_code);
+		}
+
+		  		
+		int err = esb_start_rx();
+		if (err) {
+			error();
+		}
       
-			m_state = STATE_RX;
+		m_state = STATE_RX;
 	
    
       
   }
-  CRITICAL_REGION_EXIT();
+  //CRITICAL_REGION_EXIT();
 }
 
 
@@ -468,19 +476,21 @@ void timeslot_sd_init(callback_t process_function)
     // Using three avilable interrupt handlers for interrupt level management
     // These can be any available IRQ as we're not using any of the hardware,
     // simply triggering them through software
-    NVIC_ClearPendingIRQ(TIMESLOT_END_IRQn);
-    NVIC_SetPriority(TIMESLOT_END_IRQn, TIMESLOT_END_IRQPriority);
+	IRQ_DIRECT_CONNECT(TIMESLOT_END_IRQn, TIMESLOT_END_IRQPriority, TIMESLOT_END_IRQHandler, 0);
+	irq_enable(TIMESLOT_END_IRQn);
+	NVIC_ClearPendingIRQ(TIMESLOT_END_IRQn);
     NVIC_EnableIRQ(TIMESLOT_END_IRQn);
-
+	irq_enable(TIMESLOT_BEGIN_IRQn);
+	IRQ_DIRECT_CONNECT(TIMESLOT_BEGIN_IRQn, TIMESLOT_BEGIN_IRQPriority, TIMESLOT_BEGIN_IRQHandler, 0);
+	
     NVIC_ClearPendingIRQ(TIMESLOT_BEGIN_IRQn);
-    NVIC_SetPriority(TIMESLOT_BEGIN_IRQn, TIMESLOT_BEGIN_IRQPriority);
     NVIC_EnableIRQ(TIMESLOT_BEGIN_IRQn);
 	
 	
 	
 	  //for test only
-	  nrf_gpio_cfg_output(DBG_SIG_TIMSLOTS);
-	  nrf_gpio_pin_clear(DBG_SIG_TIMSLOTS);
+	  //nrf_gpio_cfg_output(DBG_SIG_TIMSLOTS);
+	  //nrf_gpio_pin_clear(DBG_SIG_TIMSLOTS);
 	
 	  callback = process_function;
 
