@@ -27,7 +27,7 @@
 #define LED_OFF   1
 
 
-#define PERIPH_NUM   1//1..2
+#define PERIPH_NUM   2//1..2
 
 #define	PAYLOAD_SIZE	50  //bytes
 

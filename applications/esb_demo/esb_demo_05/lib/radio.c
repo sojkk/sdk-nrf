@@ -621,7 +621,7 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 		return err;
 	}
 	
-	err = esb_enable_pipes(1 << DATA_PIPE );  //only enabled pipe 0 and 1
+	err = esb_enable_pipes(1 << DATA_PIPE );  //only enabled pipe 0 
 	if (err) {
 		return err;
 	}	
