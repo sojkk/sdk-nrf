@@ -36,6 +36,15 @@ In addition, the |NCS| provides the following samples that showcase the use of a
 
    ../../samples/edge_impulse/*/README
 
+.. _gazell_samples:
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Gazell samples
+   :glob:
+
+   ../../samples/gazell/*/README
+
 .. _matter_samples:
 
 .. toctree::

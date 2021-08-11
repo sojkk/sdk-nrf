@@ -1,0 +1,17 @@
+#
+# Copyright (c) 2021 Nordic Semiconductor
+#
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+#
+
+source "Kconfig.zephyr"
+
+menu "Gazell Link Layer sample: Device"
+
+config GZLL_TX_STATISTICS
+	bool "Packet transaction statistics"
+	default y
+	help
+	  Turns on transmission statistics gathering.
+
+endmenu

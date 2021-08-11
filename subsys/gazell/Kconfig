@@ -1,0 +1,158 @@
+#
+# Copyright (c) 2021 Nordic Semiconductor ASA
+#
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+#
+
+menuconfig GAZELL
+	bool "Gazell"
+	depends on GZLL && CLOCK_CONTROL_NRF
+	help
+	  Enable Gazell functionality.
+
+if GAZELL
+
+module = GAZELL
+module-str = Gazell
+source "subsys/logging/Kconfig.template.log_config"
+
+config GAZELL_PAIRING
+	bool "Gazell Pairing"
+	help
+	  Enable Gazell Pairing.
+
+if GAZELL_PAIRING
+
+choice GAZELL_PAIRING_ROLE
+	depends on GAZELL_PAIRING
+	prompt "Gazell Pairing role."
+
+config GAZELL_PAIRING_DEVICE
+	bool "Device"
+
+config GAZELL_PAIRING_HOST
+	bool "Host"
+	depends on ENTROPY_GENERATOR
+
+endchoice
+
+if GAZELL_PAIRING_DEVICE
+
+config GAZELL_PAIRING_DEVICE_MSGQ_LEN
+	int "Gazell Pairing Device message queue length"
+	range 1 20
+	default 1
+
+endif # GAZELL_PAIRING_DEVICE
+
+config GAZELL_PAIRING_CRYPT
+	bool "Gazell Pairing encryption"
+	depends on ENTROPY_GENERATOR && CRYPTO_NRF_ECB
+	help
+	  Enable Gazell Pairing encryption.
+
+config GAZELL_PAIRING_SETTINGS
+	bool "Gazell Pairing settings persistant storage"
+	depends on SETTINGS
+	help
+	  Enable Gazell Pairing settings persistant storage.
+
+endif # GAZELL_PAIRING
+
+config GAZELL_HIGH_IRQ_PRIO
+	int "Gazell high IRQ priority"
+	range 0 7
+	default 0
+	help
+	  The interrupt priority for Gazell's radio and timer IRQ. This value
+	  shall be less than or equal to the Gazell's low IRQ priority value.
+
+config GAZELL_LOW_IRQ_PRIO
+	int "Gazell low IRQ priority"
+	range GAZELL_HIGH_IRQ_PRIO 7
+	default 6
+	help
+	  The interrupt priority for Gazell's SWI IRQ. This value shall
+	  be greater than or equal to the Gazell's high IRQ priority value.
+
+choice GAZELL_TIMER
+	default GAZELL_TIMER2
+	prompt "Timer to use for the Gazell timer."
+
+config GAZELL_TIMER0
+	bool "TIMER0"
+	depends on HAS_HW_NRF_TIMER0
+
+config GAZELL_TIMER1
+	bool "TIMER1"
+	depends on HAS_HW_NRF_TIMER1
+
+config GAZELL_TIMER2
+	bool "TIMER2"
+	depends on HAS_HW_NRF_TIMER2
+
+config GAZELL_TIMER3
+	bool "TIMER3"
+	depends on HAS_HW_NRF_TIMER3
+
+config GAZELL_TIMER4
+	bool "TIMER4"
+	depends on HAS_HW_NRF_TIMER4
+
+endchoice
+
+choice GAZELL_SWI
+	default GAZELL_SWI0
+	prompt "Software interrupt to use for Gazell event report."
+
+config GAZELL_SWI0
+	bool "SWI0"
+	depends on HAS_HW_NRF_SWI0
+
+config GAZELL_SWI1
+	bool "SWI1"
+	depends on HAS_HW_NRF_SWI1
+
+config GAZELL_SWI2
+	bool "SWI2"
+	depends on HAS_HW_NRF_SWI2
+
+config GAZELL_SWI3
+	bool "SWI3"
+	depends on HAS_HW_NRF_SWI3
+
+config GAZELL_SWI4
+	bool "SWI4"
+	depends on HAS_HW_NRF_SWI4
+
+config GAZELL_SWI5
+	bool "SWI5"
+	depends on HAS_HW_NRF_SWI5
+
+endchoice
+
+config GAZELL_PPI_0
+	int "Gazell PPI channel 0."
+	range 0 19
+	default 17
+	help
+	  Gazell PPI channel 0. Note that this value can not
+	  overlap with PPI channels used by other subsystems.
+
+config GAZELL_PPI_1
+	int "Gazell PPI channel 1."
+	range 0 19
+	default 18
+	help
+	  Gazell PPI channel 1. Note that this value can not
+	  overlap with PPI channels used by other subsystems.
+
+config GAZELL_PPI_2
+	int "Gazell PPI channel 2."
+	range 0 19
+	default 19
+	help
+	  Gazell PPI channel 2. Note that this value can not
+	  overlap with PPI channels used by other subsystems.
+
+endif # GAZELL
