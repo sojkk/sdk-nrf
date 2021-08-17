@@ -32,8 +32,11 @@
 
 #define LOG_CNT                     1000
 
-#define RADIO_CHAN_TAB              {6, 58,  78 }
-#define	RADIO_CHAN_TAB_SIZE         3
+//#define RADIO_CHAN_TAB              {6, 58,  78 }
+//#define	RADIO_CHAN_TAB_SIZE         3
+
+#define RADIO_CHAN_TAB              {2, 42, 72, 12, 22, 32, 52, 62, 78}
+#define	RADIO_CHAN_TAB_SIZE         9
 
 #define	RETRAN_CNT                  0
 

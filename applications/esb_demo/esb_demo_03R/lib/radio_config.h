@@ -21,10 +21,8 @@
 #define DATA_SENDING_P5             31
 #endif
 
-#define NUM_OF_PERIPH               3//2  <--7/19/21 test
-
-#define	PAIRING_PIPE                0
-#define	DATA_PIPE                   1
+#define NUM_OF_PERIPH               2  
+#define	DATA_PIPE                   0
 
 #define PAIRING_ADDRESS             {0xE7, 0xE7, 0xE7, 0xE7}
 #define SYSTEM_ADDRESS              {0xC2, 0xC2, 0xC2, 0xC2}
@@ -32,12 +30,15 @@
 
 #define LOG_CNT                     1000
 
-#define RADIO_CHAN_TAB              {6, 58,  78 }
-#define	RADIO_CHAN_TAB_SIZE         3
+//#define RADIO_CHAN_TAB              {6, 58,  78 }
+//#define	RADIO_CHAN_TAB_SIZE         3
+
+#define RADIO_CHAN_TAB              {2, 42, 72, 12, 22, 32, 52, 62, 78}
+#define	RADIO_CHAN_TAB_SIZE         9
 
 #define	RETRAN_CNT                  0
 
-#define ADJ                         30//25 <--7/19/21 test
+#define ADJ                         25
 #define POLL_TICKS                  30 //30.5 us  PER TICK  
 
 

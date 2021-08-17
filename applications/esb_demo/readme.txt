@@ -31,7 +31,7 @@ esb_demo_03C
 Re-arrange periph num : 0- broadcast, 1 & 2 for mic.
 
 
-esb_demo_03D
+esb_demo_03D/esb_demo_03DR
 
 Based on esb_demo_03C, use 9 channels, mic 45 bytes, broadcast 90 bytes, 3dBm tx power.
 

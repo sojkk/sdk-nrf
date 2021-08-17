@@ -126,6 +126,7 @@ static void receive_message(void)
 			{	
 				err = radio_setup(true, RADIO_TX_POWER_0DBM, radio_evt_cb, 0);
 				tx_event.data[0]	= (uint8_t) (256-err);
+				printk("CPUNET: radio_setup config central\n");
 			}
 			else if (rx_cmd.data[0] == CONFIG_PERIPH)
 			{
@@ -156,6 +157,8 @@ static void receive_message(void)
 			 
 			tx_event.data[0]=0;
 			
+			printk("CPUNET: radio start tx poll\n");
+			
 			break;
 			
 		case RADIO_START_RX_SCAN_CMD:
@@ -171,7 +174,7 @@ static void receive_message(void)
 		
 		case RADIO_PUT_PACKET_CMD:
 		
-			rx_buf.length = rx_cmd.data_len;
+			rx_buf.length = rx_cmd.data_len -1;
 			rx_buf.periph_num = rx_cmd.data[0];
 			memcpy(rx_buf.data, &rx_cmd.data[1], rx_cmd.data_len);			
 		
@@ -239,9 +242,13 @@ void app_task(void *arg1, void *arg2, void *arg3)
 
 void lf_clock_start(void)
 {
-
-    NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_LFXO;
-
+	
+#if defined(CONFIG_SOC_SERIES_NRF53X)
+	NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_LFRC;
+#else
+	NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_RC;
+#endif
+   
   //Start LFCLK
     NRF_CLOCK->EVENTS_LFCLKSTARTED = 0;
     NRF_CLOCK->TASKS_LFCLKSTART = 1;

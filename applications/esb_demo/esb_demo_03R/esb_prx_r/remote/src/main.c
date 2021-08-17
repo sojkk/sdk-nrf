@@ -240,7 +240,12 @@ void app_task(void *arg1, void *arg2, void *arg3)
 void lf_clock_start(void)
 {
 
-    NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_LFRC;
+#if defined(CONFIG_SOC_SERIES_NRF53X)
+	NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_LFRC;
+#else
+	NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_RC;
+#endif
+  
 
   //Start LFCLK
     NRF_CLOCK->EVENTS_LFCLKSTARTED = 0;

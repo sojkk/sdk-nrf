@@ -481,7 +481,7 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 {
 	int err;
 	
-	uint8_t addr_prefix[] = {0, 1};
+	uint8_t addr_prefix[] = {0,1};
 	
 	m_event_callback = event_callback;
 	

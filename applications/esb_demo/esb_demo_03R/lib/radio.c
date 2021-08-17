@@ -31,7 +31,7 @@ static bool m_rx_ack_wait = false;
 
 static bool m_rx_received = false;
 
-static uint8_t chan_cnt[] = {0, 0,};
+static uint8_t chan_cnt = 0;
 
 static uint8_t m_radio_chan_tab[] = RADIO_CHAN_TAB;
 
@@ -129,7 +129,7 @@ static void rtc_tx_event_handler(void)
 	radio_rtc_clear_count();
 	
 	//server periphs 
-	esb_update_prefix(1, periph_cnt+1);	
+	esb_update_prefix(DATA_PIPE, periph_cnt+1);	
 	
 
 	err = esb_write_payload(&dum_payload);
@@ -167,8 +167,8 @@ static void rtc_rx_event_handler(void)
 				
 				gpio_pin_set(dbg_port, dbg_pins[4], 1);
 
-				chan_cnt[0] = (chan_cnt[0] +1) % RADIO_CHAN_TAB_SIZE;
-				esb_set_rf_channel(m_radio_chan_tab[chan_cnt[0]]);
+				chan_cnt = (chan_cnt +1) % RADIO_CHAN_TAB_SIZE;
+				esb_set_rf_channel(m_radio_chan_tab[chan_cnt]);
 				esb_start_rx();
 				
 			}
@@ -209,8 +209,8 @@ static void rtc_rx_event_handler(void)
 				{
 					esb_stop_rx();
 				}
-				esb_set_rf_channel(m_radio_chan_tab[chan_cnt[0]]);	
-						chan_cnt[0] = (chan_cnt[0] +1) % RADIO_CHAN_TAB_SIZE;	
+				esb_set_rf_channel(m_radio_chan_tab[chan_cnt]);	
+						chan_cnt = (chan_cnt +1) % RADIO_CHAN_TAB_SIZE;	
 				
 					m_rx_ack_wait = false;
 			}
@@ -235,8 +235,8 @@ static void rtc_rx_event_handler(void)
 static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 {	
 	//uint16_t success_rate;
-	printk("radio: ptx event handler, event = %d\n", p_event->evt_id);	
-	printk("radio: ptx event handler, periph cnt = %u\n", periph_cnt);
+	//printk("radio: ptx event handler, event = %d\n", p_event->evt_id);	
+	//printk("radio: ptx event handler, periph cnt = %u\n", periph_cnt);
 	
 	switch (p_event->evt_id)
     {
@@ -275,11 +275,14 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 		{	
 				periph_cnt = (periph_cnt +1) % NUM_OF_PERIPH; // periph_cnt = [0..(NUM_OF_PERIPH-1)]
 				
-				printk("NUM_OF_PERIPH = %u , periph_cnt = %u \n", NUM_OF_PERIPH, periph_cnt );
+				//printk("NUM_OF_PERIPH = %u , periph_cnt = %u \n", NUM_OF_PERIPH, periph_cnt );
 				
 				//JS Modify: 10/29/2020, switch to next rf chan for next round
-			chan_cnt[periph_cnt] = (chan_cnt[periph_cnt] +1) % RADIO_CHAN_TAB_SIZE;		
-			esb_set_rf_channel(m_radio_chan_tab[chan_cnt[periph_cnt]]);
+				if(periph_cnt==0)
+				{	
+					chan_cnt = (chan_cnt +1) % RADIO_CHAN_TAB_SIZE;		
+					esb_set_rf_channel(m_radio_chan_tab[chan_cnt]);
+				}	
 			m_log_total_cnt[periph_cnt]++; //log
 		}
 		
@@ -377,7 +380,7 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 {
 	int err;
 	
-	uint8_t addr_prefix[] = {0, 1};
+	uint8_t addr_prefix[] = {1};
 	
 	m_event_callback = event_callback;
 		
