@@ -16,6 +16,7 @@
 #include <zephyr.h>
 #include <zephyr/types.h>
 
+#include "nrf_ecb.h"
 
 LOG_MODULE_REGISTER(radio, CONFIG_APP_LOG_LEVEL);
 
@@ -26,6 +27,8 @@ LOG_MODULE_REGISTER(radio, CONFIG_APP_LOG_LEVEL);
 //log
 //static uint16_t m_log_total_cnt[] =  {0, 0};
 //static uint16_t m_log_success_cnt[]= {0, 0};
+
+static bool m_rx_ack_wait = false;
 
 static bool m_rx_received = false;
 
@@ -53,12 +56,6 @@ static const uint8_t dbg_pins[] = {DATA_SENDING_P0, DATA_SENDING_P1, DATA_SENDIN
 static radio_states_t rx_state;
 
 static bool is_rx_on = false;
-
-static bool chg_to_search = false;
-
-static bool just_sync = true;
-
-static uint8_t dum_cnt =0;
 
 static const struct device *dbg_port;
 
@@ -140,14 +137,12 @@ static void rtc_tx_event_handler(void)
 	esb_update_prefix(DATA_PIPE, periph_cnt);	
 
 	
-	
 	if(periph_cnt == BCT_PERIPH_NUM) //broadcast
 	{
 		
 		LOG_DBG("data payload = %d, %d, %d", data_payload.data[0], data_payload.data[1], data_payload.data[2]);
 		LOG_DBG("data length =%d, pipe = %d", data_payload.length, data_payload.pipe);
 		
-		data_payload.data[0] = dum_cnt;
 		data_payload.noack = true;
 		err = esb_write_payload(&data_payload);
 		if(err)
@@ -163,7 +158,6 @@ static void rtc_tx_event_handler(void)
 	}
 	else
 	{
-		dum_payload.data[0] = dum_cnt;
 		dum_payload.noack = false;
 		err = esb_write_payload(&dum_payload);
 	}
@@ -186,34 +180,27 @@ static void rtc_rx_event_handler(void)
 	
 	if(rx_state ==  RADIO_PERIPH_SEARCH)
 	{
-		radio_rtc_clear_count();
-		 
-		if(chg_to_search)	
-		{
-			radio_rtc_compare0_set(RX_SEARCH_PERIOD);
-
-			chg_to_search = false;
-		}
+		 radio_rtc_clear_count();
 		
-		//For power saving, turn off scan for RX_SEARCH_PERIOD
-		if(is_rx_on)
-		{
-			is_rx_on = false;
-			esb_stop_rx();
-			gpio_pin_set(dbg_port, dbg_pins[4], 0);
-			
-		}
-		else
-		{
-			is_rx_on = true;
-			
-			gpio_pin_set(dbg_port, dbg_pins[4], 1);
+			//For power saving, turn off scan for RX_SEARCH_PERIOD
+			if(is_rx_on)
+			{
+				is_rx_on = false;
+				esb_stop_rx();
+				gpio_pin_set(dbg_port, dbg_pins[4], 0);
+				
+			}
+			else
+			{
+				is_rx_on = true;
+				
+				gpio_pin_set(dbg_port, dbg_pins[4], 1);
 
-			chan_cnt = (chan_cnt +1) % RADIO_CHAN_TAB_SIZE;
-			esb_set_rf_channel(m_radio_chan_tab[chan_cnt]);
-			esb_start_rx();
-			
-		}
+				chan_cnt = (chan_cnt +1) % RADIO_CHAN_TAB_SIZE;
+				esb_set_rf_channel(m_radio_chan_tab[chan_cnt]);
+				esb_start_rx();
+				
+			}
 	}
 	else if ( rx_state == RADIO_PERIPH_WAIT_FOR_ACK_WR)
 	{
@@ -223,8 +210,11 @@ static void rtc_rx_event_handler(void)
 		gpio_pin_set(dbg_port, dbg_pins[4], 0);							
 		rx_state = RADIO_PERIPH_OPERATE;
 		radio_rtc_clear_count();		
-		radio_rtc_compare0_set(RX_OPERATE_PERIOD_W_WAIT);				
+		radio_rtc_compare0_set(RX_OPERATE_PERIOD_W_WAIT);
+	
+				
 		m_rx_received = true;
+		m_rx_ack_wait = true;
 
 	}
 
@@ -234,44 +224,39 @@ static void rtc_rx_event_handler(void)
 	
 	
 		
-		if (rx_loss_cnt >= RX_LOSS_THRESHOLD	)
+		if (rx_loss_cnt == RX_LOSS_THRESHOLD	)
 		{
 			rx_state = RADIO_PERIPH_SEARCH;
-			chg_to_search = true;
-			m_rx_received = false;
-			radio_rtc_clear_count();
-			just_sync = true;
+			radio_rtc_compare0_set(RX_SEARCH_PERIOD);
+			 m_rx_received = false;
 		}
 		else
 		{		
-			
-			radio_rtc_clear_count();
-			//JS Modify: 10/29/2020, switch to next rf chan for next round
-			radio_rtc_compare0_set(RX_OPERATE_PERIOD);
-			
-			esb_stop_rx();
-			gpio_pin_set(dbg_port, dbg_pins[4], 0);
-
-					
-			esb_set_rf_channel(m_radio_chan_tab[chan_cnt]);	
-			chan_cnt = (chan_cnt +1) % RADIO_CHAN_TAB_SIZE;	
-			
-			if(!m_rx_received)
+			if(m_rx_received)
+			{	
+				radio_rtc_clear_count();  //1/6/2021
+				//JS Modify: 10/29/2020, switch to next rf chan for next round
+				radio_rtc_compare0_set(RX_OPERATE_PERIOD);
+				if(!m_rx_ack_wait)
+				{
+					esb_stop_rx();
+				}
+				esb_set_rf_channel(m_radio_chan_tab[chan_cnt]);	
+						chan_cnt = (chan_cnt +1) % RADIO_CHAN_TAB_SIZE;	
+				
+					m_rx_ack_wait = false;
+			}
+			else //1/6/2021 modify
 			{
 				rx_loss_cnt++;
 			}
 			
 			
-			gpio_pin_set(dbg_port, dbg_pins[4], 1);
-			esb_start_rx();
+                        gpio_pin_set(dbg_port, dbg_pins[4], 1);
 			
 		}
 		
-			
-		if ( rx_state != RADIO_PERIPH_WAIT_FOR_ACK_WR)
-		{
-			m_rx_received = false;
-		}
+		esb_start_rx();
 		
 
 	}
@@ -286,22 +271,24 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 	switch (p_event->evt_id)
     {
         case ESB_EVENT_TX_SUCCESS:
-		
-				LOG_DBG("TX SUCCESS EVENT");				
-							
-				//if(periph_cnt == BCT_PERIPH_NUM)
-				//{	
+		{
+				LOG_DBG("TX SUCCESS EVENT");	                                                          
+				__NOP();
+								
+									
+				if(periph_cnt == BCT_PERIPH_NUM)
+				{	
 					gpio_pin_set(dbg_port, dbg_pins[periph_cnt], 0);
 					
 					periph_cnt = (periph_cnt +1) % NUM_OF_PERIPH;
 					
 					
-				//}
-							
+				}
+			
+		}						
 				break;
         case ESB_EVENT_TX_FAILED:
 				LOG_DBG("TX FAILED EVENT");
-				periph_cnt = (periph_cnt +1) % NUM_OF_PERIPH;
 				(void) esb_flush_tx();			
 				break;
         case ESB_EVENT_RX_RECEIVED:										 
@@ -312,12 +299,10 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 
 				gpio_pin_set(dbg_port, dbg_pins[periph_cnt],0); //clear the debug pin if received data 
                              
-				if(periph_cnt!=0)
-					gpio_pin_set(dbg_port, dbg_pins[(periph_cnt -1) % NUM_OF_PERIPH], 0); //clear the debug pin if received data 
-				else  
-					gpio_pin_set(dbg_port, dbg_pins[NUM_OF_PERIPH-1], 0);
-											
-				m_event_callback(RADIO_CENTRAL_DATA_RECEIVED);								
+									
+				m_event_callback(RADIO_CENTRAL_DATA_RECEIVED);		   
+				
+				
 				break;
 			
 			
@@ -331,7 +316,8 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 		
 		if (p_event->evt_id != ESB_EVENT_TX_SUCCESS)   // TX_SUCCESS deplicates with DATA_RECEIVED
 		{	
-			
+			periph_cnt = (periph_cnt +1) % NUM_OF_PERIPH; // periph_cnt = [0..(NUM_OF_PERIPH-1)]
+
 			//JS Modify: 10/29/2020, switch to next rf chan for next round
 			if(periph_cnt==0)
 			{	
@@ -368,16 +354,7 @@ static void nrf_esb_prx_event_handler(struct esb_evt const *p_event)
         case ESB_EVENT_RX_RECEIVED:
 				LOG_DBG("RX RECEIVED EVENT");
 	
-			if(just_sync)
-				{
-					esb_stop_rx();
-					chan_cnt = (chan_cnt +1) % RADIO_CHAN_TAB_SIZE;
-					esb_set_rf_channel(m_radio_chan_tab[chan_cnt]);
-					just_sync=false;
-				}
-	
-	
-		//if (p_event->tx_attempts <= RETRAN_CNT)
+		if (p_event->tx_attempts <= RETRAN_CNT)
 						m_rx_received = true;
 	
 		if(bct_rcv_flag)
@@ -449,6 +426,38 @@ static void dbg_pins_init(void)
                       		
                         gpio_pin_set(dbg_port, dbg_pins[i], 0); 
          }
+}
+
+
+static void random_numbers_generate(uint8_t * dst, uint8_t n)
+{
+    uint8_t i;
+
+    NRF_RNG->EVENTS_VALRDY=0;
+    NRF_RNG->TASKS_START = 1;
+    for (i = 0; i < n; i++)
+    {
+        while (NRF_RNG->EVENTS_VALRDY==0)
+        {}
+        dst[i] = (uint8_t)NRF_RNG->VALUE;
+        NRF_RNG->EVENTS_VALRDY=0;
+    }
+    NRF_RNG->TASKS_STOP = 1;
+}
+
+
+
+static void xor_cipher(uint8_t* dst, const uint8_t* src, const uint8_t* pad, uint8_t length)
+{
+    uint8_t i;
+
+    for (i = 0; i < length; i++)
+    {
+        *dst = *src ^ *pad;
+        dst++;
+        src++;
+        pad++;
+    }
 }
 
 
@@ -533,7 +542,15 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 
 	dbg_pins_init();
 		
+	uint8_t key[16] = SECRET_KEY;
+
+	// Set up hal_aes using new key and init vector
+	(void)nrf_ecb_init();
+	nrf_ecb_set_key(key);	
+		
+		
 	return 0;
+	
 }
 
 
@@ -559,7 +576,22 @@ void radio_fetch_packet(radio_data_t * rcv_data)
 	
 	rcv_data->length = rx_payload.length;
 	rcv_data->periph_num = esb_get_addr_prefix(DATA_PIPE); 
-	memcpy(rcv_data->data, rx_payload.data, rx_payload.length);	
+	
+	/*** For decryption ***/
+
+	uint8_t iv[16]  = TEST_TOKEN;
+
+	nrf_ecb_crypt(iv, iv);
+
+	xor_cipher(&rcv_data->data[0],  &rx_payload.data[0],  iv, 16);
+	xor_cipher(&rcv_data->data[16], &rx_payload.data[16], iv, 16); 
+	xor_cipher(&rcv_data->data[32], &rx_payload.data[32], iv, 16); 
+	xor_cipher(&rcv_data->data[48], &rx_payload.data[48], iv, 16); 
+
+
+    /*********************/
+	
+	//memcpy(rcv_data->data, rx_payload.data, rx_payload.length);	
 	
 	LOG_DBG("rcv data = %d, %d, %d", rcv_data->data[0], rcv_data->data[1], rcv_data->data[2]);
 	LOG_DBG("rcv length = %d", rcv_data->length);
@@ -588,9 +620,27 @@ void radio_scan_for_poll(void)
 
 void radio_put_packet(radio_data_t * tx_data)
 {	
+	/*** For encryption ***/
+        
+    uint8_t iv[16]  = TEST_TOKEN;
+
+    uint8_t en_data[64];
+      
+    nrf_ecb_crypt(iv, iv);
+
+    xor_cipher(&en_data[0],  &tx_data->data[0],  iv, 16);
+    xor_cipher(&en_data[16], &tx_data->data[16], iv, 16); 
+    xor_cipher(&en_data[32], &tx_data->data[32], iv, 16); 
+    xor_cipher(&en_data[48], &tx_data->data[48], iv, 16); 
+
+    /******************/
+	
+	
+	
 	data_payload.pipe = DATA_PIPE;
 	data_payload.length = tx_data->length;
-	memcpy(data_payload.data, tx_data->data, tx_data->length);
+	//memcpy(data_payload.data, tx_data->data, tx_data->length);
+	memcpy(data_payload.data, en_data, tx_data->length);
 	
 }
 
