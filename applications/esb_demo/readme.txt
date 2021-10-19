@@ -65,6 +65,6 @@ inv-esb-aFH with esb fast ramp up and pre rssi scan, plus one broadcast slot
 
 --------------------------------------------------------------------------------------------------------------
 
-esb_demo_03E
+esb_demo_03E/03ER
 
-Based on esb_demo_03D, add encryption
+Based on esb_demo_03D/DR, add encryption
