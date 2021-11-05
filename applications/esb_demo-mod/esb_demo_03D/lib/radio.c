@@ -218,11 +218,14 @@ static void rtc_rx_event_handler(void)
 	else if ( rx_state == RADIO_PERIPH_WAIT_FOR_ACK_WR)
 	{
 
-		
+		gpio_pin_set(dbg_port, dbg_pins[3], 0);	
 		esb_stop_rx();	
 		gpio_pin_set(dbg_port, dbg_pins[4], 0);							
 		rx_state = RADIO_PERIPH_OPERATE;
-		radio_rtc_clear_count();		
+		radio_rtc_clear_count();
+if(bct_rcv_flag)
+		radio_rtc_compare0_set(RX_OPERATE_PERIOD_W_WAIT_BR);	
+else 	
 		radio_rtc_compare0_set(RX_OPERATE_PERIOD_W_WAIT);				
 		m_rx_received = true;
 
@@ -245,10 +248,12 @@ static void rtc_rx_event_handler(void)
 		else
 		{		
 			
+			
 			radio_rtc_clear_count();
 			//JS Modify: 10/29/2020, switch to next rf chan for next round
+
 			radio_rtc_compare0_set(RX_OPERATE_PERIOD);
-			
+
 			esb_stop_rx();
 			gpio_pin_set(dbg_port, dbg_pins[4], 0);
 
@@ -367,7 +372,9 @@ static void nrf_esb_prx_event_handler(struct esb_evt const *p_event)
 				break;
         case ESB_EVENT_RX_RECEIVED:
 				LOG_DBG("RX RECEIVED EVENT");
-	
+
+			gpio_pin_set(dbg_port, dbg_pins[3], 1);	
+
 			if(just_sync)
 				{
 					esb_stop_rx();
@@ -376,39 +383,37 @@ static void nrf_esb_prx_event_handler(struct esb_evt const *p_event)
 					just_sync=false;
 				}
 	
-	
 		//if (p_event->tx_attempts <= RETRAN_CNT)
-						m_rx_received = true;
+			m_rx_received = true;
 	
-		if(bct_rcv_flag)
-		{
-			           										
-			m_event_callback(RADIO_PERIPH_BCT_RECEIVED);	
-			
+			if(bct_rcv_flag)
+			{
+																
+				m_event_callback(RADIO_PERIPH_BCT_RECEIVED);	
+				
+			}
+			else
+			{
 		
+				err = esb_read_rx_payload(&dum_payload);
+				
+				if (!err)             
+				{								
 		
-		}
-		else
-		{
-	
-			err = esb_read_rx_payload(&dum_payload);
-			
-			if (!err)             
-			{								
-	
-				esb_write_payload(&data_payload);
-			
-				m_event_callback(RADIO_PERIPH_DATA_SENT);
-			}		
+					esb_write_payload(&data_payload);
+				
+					m_event_callback(RADIO_PERIPH_DATA_SENT);
+				}		
 										
 				
-		}
+			}
+			
+			rx_state = RADIO_PERIPH_WAIT_FOR_ACK_WR;
+			radio_rtc_clear_count();
+			radio_rtc_compare0_set(RX_WAIT_FOR_ACK_WR_PERIOD);
+			rx_loss_cnt = 0;				
+
 		
-		rx_state = RADIO_PERIPH_WAIT_FOR_ACK_WR;
-		radio_rtc_clear_count();
-		radio_rtc_compare0_set(RX_WAIT_FOR_ACK_WR_PERIOD);
-		rx_loss_cnt = 0;
-							
 		default: 
 			
 			break;
