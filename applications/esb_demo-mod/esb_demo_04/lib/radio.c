@@ -23,6 +23,13 @@ LOG_MODULE_REGISTER(radio, CONFIG_APP_LOG_LEVEL);
 
 #define MAX_RTC_TASKS_DELAY   47                                          /**< Maximum delay until an RTC task is executed. */
 
+//aFH
+static uint8_t 	central_loss_cnt[] = {0, 0, 0};
+static bool 	update_ch_tab_flag = false;    		 // Flag for update channel table, =true allows update
+static uint8_t  switch_channel_counter[] = {0, 0}; //Central down counter for channel switch, zero means it is the current channel tab
+static uint8_t  periph_sw_counter = 0;
+
+
 //log
 //static uint16_t m_log_total_cnt[] =  {0, 0};
 //static uint16_t m_log_success_cnt[]= {0, 0};
@@ -33,13 +40,24 @@ static bool m_rx_received = false;
 
 static uint8_t chan_cnt = 0;
 
-static uint8_t m_radio_chan_tab[] = RADIO_CHAN_TAB;
+static uint8_t radio_table[] = RADIO_CHAN_TAB;
+
+static uint8_t unused_radio_table[RADIO_UNUSED_CHAN_TAB_SIZE];
+
+static uint8_t m_radio_chan_tab[RADIO_CHAN_TAB_SIZE];
+static uint8_t next_radio_chan_tab[RADIO_CHAN_TAB_SIZE];
 
 static uint8_t rx_loss_cnt = 0;
 
 static uint8_t periph_cnt = 0;
 
-static struct esb_payload	dum_payload  = ESB_CREATE_PAYLOAD(DATA_PIPE, 0xBE);
+static struct esb_payload	dum_payload  = ESB_CREATE_PAYLOAD(DATA_PIPE, 0xBE, 0xC0, 0xC1, 0xC2, 0xC3);  // Poll packet contains 
+/* 0xBE - poll packet round counter 
+ * 0xCO - switch channel counter
+ * 0xC1 - Channel tab 0
+ * 0xC2 - Channel tab 1
+ * 0xC3 - Channel tab 2
+ */
 
 static struct esb_payload    data_payload;
 
@@ -95,6 +113,7 @@ static void radio_rtc_start(void)
 
 /**@brief Function for stopping the RTC1 timer.
  */
+/* 
 static void radio_rtc_stop(void)
 {
     NVIC_DisableIRQ(RADIO_RTC_IRQn);
@@ -106,7 +125,7 @@ static void radio_rtc_stop(void)
     k_sleep(K_USEC(MAX_RTC_TASKS_DELAY));
 
 }
-
+*/
 /**@brief Function for setting the RTC Capture Compare register 0, and enabling the corresponding
  *        event.
  *
@@ -123,11 +142,26 @@ static __INLINE void radio_rtc_clear_count(void)
 	 RADIO_RTC->TASKS_CLEAR =1;
 }	
 
+static void update_unused_radio_table(uint8_t ch)
+{
+		uint8_t tmp_array[RADIO_UNUSED_CHAN_TAB_SIZE-1];
+	
+		//Fill- in the temp array
+		memcpy(tmp_array, &unused_radio_table[1], RADIO_UNUSED_CHAN_TAB_SIZE-1);
+	
+		// Fill back the unused radio table , last byte being the withdrawn channel 
+		unused_radio_table[RADIO_UNUSED_CHAN_TAB_SIZE-1] = ch;
+		memcpy(unused_radio_table, tmp_array, RADIO_UNUSED_CHAN_TAB_SIZE-1);  
 
+}
 
 static void rtc_tx_event_handler(void)
 {
-        int err;
+	uint32_t volatile i= 0xFF; 
+	
+	uint8_t tmp_used_chan;
+		
+	int err;
 	
 	esb_flush_tx();  //JS Modify: 4/23/2020  <--
 	
@@ -136,7 +170,10 @@ static void rtc_tx_event_handler(void)
 	//server periphs 
 	esb_update_prefix(DATA_PIPE, periph_cnt+1);	
 	
-	dum_payload.data[0] = dum_cnt;
+	//Upload data to dum payload
+	dum_payload.data[0] = dum_cnt;		
+	dum_payload.data[1] = switch_channel_counter[periph_cnt];
+	memcpy(&dum_payload.data[2], next_radio_chan_tab, RADIO_CHAN_TAB_SIZE); 
 
 	err = esb_write_payload(&dum_payload);
 	if(err)
@@ -147,6 +184,40 @@ static void rtc_tx_event_handler(void)
 	{
 		gpio_pin_set(dbg_port, dbg_pins[periph_cnt], 1); //Set debug pin for poll the periph
 	}
+	
+	
+	if(update_ch_tab_flag)
+	{	
+		//aFH : increment loss cnt for every rtc timer expires, value resets to 0 if gets RX_RECEIVED event		
+				central_loss_cnt[chan_cnt]++;
+				if (switch_channel_counter[periph_cnt]!=0) // only update switch cnt at the beginning of the frame		
+				{	
+						switch_channel_counter[periph_cnt]--;				
+				}
+				else // use new channel tab for hopping if switch_channel_counter goes to zero
+				{
+					if(memcmp(m_radio_chan_tab, next_radio_chan_tab, RADIO_CHAN_TAB_SIZE)!=0)					
+							memcpy(m_radio_chan_tab, next_radio_chan_tab, RADIO_CHAN_TAB_SIZE);
+				}
+
+	
+				//aFH: Change frequency table if =  CENTRAL_LOSS_THRESHOLD, start 
+				if (central_loss_cnt[chan_cnt] >= CENTRAL_LOSS_THRESHOLD)
+				{
+					memset(central_loss_cnt, 0, RADIO_CHAN_TAB_SIZE); //reset central loss cnt as it only needs to enter once
+					update_ch_tab_flag =false;
+					//Update channel table here...
+					//Replace the current frequency with new one
+					tmp_used_chan = m_radio_chan_tab[chan_cnt];
+					next_radio_chan_tab[chan_cnt]   = unused_radio_table[0];
+					//Put the taken-away channel to end of the unused radio table
+					update_unused_radio_table(tmp_used_chan);
+					switch_channel_counter[0] = CENTRAL_SWITCH_CHAN_CNT; //
+					switch_channel_counter[1] = CENTRAL_SWITCH_CHAN_CNT; //
+				}
+				//central_loss_cnt[chan_cnt]++;
+	}
+	
 	
 	dum_cnt++; // rolling counter
 }
@@ -199,6 +270,17 @@ static void rtc_rx_event_handler(void)
 	
 	else //rx_state == RADIO_PERIPH_OPERATE
 	{	
+	
+		if(periph_sw_counter!=0) 
+		{	
+			periph_sw_counter--;
+		}
+		else if (update_ch_tab_flag)  //update channel table once if sw counter =0
+		{
+			memcpy(m_radio_chan_tab, next_radio_chan_tab, RADIO_CHAN_TAB_SIZE);
+			update_ch_tab_flag = false;
+		}
+	
 		if (rx_loss_cnt >= RX_LOSS_THRESHOLD	)
 		{
 			rx_state = RADIO_PERIPH_SEARCH;
@@ -264,15 +346,20 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 			
         case ESB_EVENT_RX_RECEIVED:										 
 			LOG_DBG("RX RECEIVED EVENT");
-				
+							
+			//aFH: Resets central loss cent & switch channel counter for particular peripheral if get rx received
+			central_loss_cnt[chan_cnt] =0;
+			switch_channel_counter[periph_cnt] =0;
+			//if ( (central_loss_cnt[0]==0)  && (central_loss_cnt[1]==0) )
+				update_ch_tab_flag = true;
+
 			//m_log_success_cnt[periph_cnt]++; //log
-			 gpio_pin_set(dbg_port, dbg_pins[periph_cnt],0); //clear the debug pin if received data 
-			/*	
-			if(periph_cnt!=0)
-				gpio_pin_set(dbg_port, dbg_pins[(periph_cnt -1) % NUM_OF_PERIPH], 0); //clear the debug pin if received data 
-			else  
-				gpio_pin_set(dbg_port, dbg_pins[NUM_OF_PERIPH-1], 0);
-			*/								
+			 gpio_pin_set(dbg_port, dbg_pins[periph_cnt],0); //clear the debug pin if received data 	
+			//if(periph_cnt!=0)
+			//	gpio_pin_set(dbg_port, dbg_pins[(periph_cnt -1) % NUM_OF_PERIPH], 0); //clear the debug pin if received data 
+			//else  
+			//	gpio_pin_set(dbg_port, dbg_pins[NUM_OF_PERIPH-1], 0);
+											
 			m_event_callback(RADIO_CENTRAL_DATA_RECEIVED);		   
 							
 			break;
@@ -289,7 +376,7 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 		if (p_event->evt_id != ESB_EVENT_TX_SUCCESS)   // TX_SUCCESS deplicates with DATA_RECEIVED
 		{	
 			periph_cnt = (periph_cnt +1) % NUM_OF_PERIPH; // periph_cnt = [0..(NUM_OF_PERIPH-1)]
-		
+			
 			if(periph_cnt ==0)
 			{	
 				chan_cnt = (chan_cnt +1) % RADIO_CHAN_TAB_SIZE;		
@@ -334,8 +421,40 @@ static void nrf_esb_prx_event_handler(struct esb_evt const *p_event)
 					just_sync=false;
 				}
 
-				m_rx_received = true;
+				//m_rx_received = true;
+				
+				if (esb_read_rx_payload(&dum_payload) == 0 )          
+				{
+					  //aFH: update channel switch counter and upload next channel tab
+					  //periph_sw_counter = dum_payload.data[0];									
+					  //if (periph_sw_counter >0)  update_ch_tab_flag = true;
+					  if  ( (rx_state == RADIO_PERIPH_SEARCH)	&& dum_payload.data[1] ==0)
+					  {
+									  memcpy(m_radio_chan_tab, &dum_payload.data[2], RADIO_CHAN_TAB_SIZE);
+					  }
+					  else if (rx_state == RADIO_PERIPH_OPERATE)
+					  {
+							  periph_sw_counter = dum_payload.data[1];									
+						if (periph_sw_counter >0)  
+							  {	
+									  update_ch_tab_flag = true;	
+									  memcpy(next_radio_chan_tab, &dum_payload.data[2], RADIO_CHAN_TAB_SIZE);
+							  }
+							  else
+							  {
+									  memcpy(m_radio_chan_tab, &dum_payload.data[2], RADIO_CHAN_TAB_SIZE);
+							  }
+					  }
+			  
+					  esb_write_payload(&data_payload);
 
+					  m_event_callback(RADIO_PERIPH_DATA_SENT);
+				}
+				
+				
+				
+				
+/*
 				err = esb_read_rx_payload(&dum_payload);
 				if (!err)             
 				{										
@@ -343,7 +462,7 @@ static void nrf_esb_prx_event_handler(struct esb_evt const *p_event)
 				
 					m_event_callback(RADIO_PERIPH_DATA_SENT);
 				}		
-										
+*/										
 				rx_state = RADIO_PERIPH_WAIT_FOR_ACK_WR;
 				radio_rtc_clear_count();
 				radio_rtc_compare0_set(RX_WAIT_FOR_ACK_WR_PERIOD);
@@ -402,6 +521,12 @@ int radio_setup(bool is_central, radio_tx_power_t tx_power,  event_callback_t ev
 	uint8_t addr_prefix[] = {1};
 	
 	m_event_callback = event_callback;
+	
+	//aFH
+	//Fill in the radio channel tables
+	memcpy(m_radio_chan_tab, radio_table, RADIO_CHAN_TAB_SIZE); 
+	memcpy(unused_radio_table, &radio_table[RADIO_CHAN_TAB_SIZE], RADIO_UNUSED_CHAN_TAB_SIZE);
+	memcpy(next_radio_chan_tab, m_radio_chan_tab, RADIO_CHAN_TAB_SIZE); 
 		
 	struct esb_config config        = ESB_DEFAULT_CONFIG;
 	
