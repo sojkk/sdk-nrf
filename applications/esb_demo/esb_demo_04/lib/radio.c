@@ -328,10 +328,10 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 				break;
         case ESB_EVENT_RX_RECEIVED:										 
 				LOG_DBG("RX RECEIVED EVENT");
-				
+					
 				//aFH: Resets central loss cent & switch channel counter for particular peripheral if get rx received
 				central_loss_cnt[chan_cnt] =0;
-				switch_channel_counter[periph_cnt] =0;
+				switch_channel_counter[periph_cnt] = 0;
 				//if ( (central_loss_cnt[0]==0)  && (central_loss_cnt[1]==0) )
 					update_ch_tab_flag = true;
 				

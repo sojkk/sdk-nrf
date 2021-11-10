@@ -215,7 +215,7 @@ static void rtc_tx_event_handler(void)
 					switch_channel_counter[0] = CENTRAL_SWITCH_CHAN_CNT; //
 					switch_channel_counter[1] = CENTRAL_SWITCH_CHAN_CNT; //
 				}
-				//central_loss_cnt[chan_cnt]++;
+				
 	}
 	
 	
@@ -346,12 +346,13 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 			
         case ESB_EVENT_RX_RECEIVED:										 
 			LOG_DBG("RX RECEIVED EVENT");
+			
 							
 			//aFH: Resets central loss cent & switch channel counter for particular peripheral if get rx received
 			central_loss_cnt[chan_cnt] =0;
-			switch_channel_counter[periph_cnt] =0;
+			//switch_channel_counter[periph_cnt] = 0;
 			//if ( (central_loss_cnt[0]==0)  && (central_loss_cnt[1]==0) )
-				update_ch_tab_flag = true;
+			update_ch_tab_flag = true;
 
 			//m_log_success_cnt[periph_cnt]++; //log
 			 gpio_pin_set(dbg_port, dbg_pins[periph_cnt],0); //clear the debug pin if received data 	
