@@ -29,6 +29,11 @@ static bool 	update_ch_tab_flag = false;    		 // Flag for update channel table,
 static uint8_t  switch_channel_counter[] = {0, 0}; //Central down counter for channel switch, zero means it is the current channel tab
 static uint8_t  periph_sw_counter = 0;
 
+static bool  tmp_central_success[] = { false, false};
+static bool			periph_on_sync[] = {false, false};	
+static uint8_t  periph_loss_sync_cnt[] = {0, 0};
+
+
 
 //log
 //static uint16_t m_log_total_cnt[] =  {0, 0};
@@ -167,6 +172,14 @@ static void rtc_tx_event_handler(void)
 	
 	radio_rtc_clear_count();
 	
+	periph_loss_sync_cnt[periph_cnt]++;
+	
+	if (periph_loss_sync_cnt[periph_cnt] >= PERIPH_ON_SYNC_CNT)
+	{
+		periph_on_sync[periph_cnt] = false;
+		
+	}
+	
 	//server periphs 
 	esb_update_prefix(DATA_PIPE, periph_cnt+1);	
 	
@@ -189,7 +202,13 @@ static void rtc_tx_event_handler(void)
 	if(update_ch_tab_flag)
 	{	
 		//aFH : increment loss cnt for every rtc timer expires, value resets to 0 if gets RX_RECEIVED event		
-				central_loss_cnt[chan_cnt]++;
+				
+				if(periph_on_sync[periph_cnt])
+				{
+					central_loss_cnt[chan_cnt]++;
+				}	
+				
+				
 				if (switch_channel_counter[periph_cnt]!=0) // only update switch cnt at the beginning of the frame		
 				{	
 						switch_channel_counter[periph_cnt]--;				
@@ -335,32 +354,40 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
     {
         case ESB_EVENT_TX_SUCCESS:
             LOG_DBG("TX SUCCESS EVENT");	
-			//periph_cnt = (periph_cnt +1) % NUM_OF_PERIPH;
 			break;
 			
         case ESB_EVENT_TX_FAILED:
 			LOG_DBG("TX FAILED EVENT");
-			//periph_cnt = (periph_cnt +1) % NUM_OF_PERIPH;
 			(void) esb_flush_tx();			
 			break;
 			
         case ESB_EVENT_RX_RECEIVED:										 
 			LOG_DBG("RX RECEIVED EVENT");
 			
-							
-			//aFH: Resets central loss cent & switch channel counter for particular peripheral if get rx received
-			central_loss_cnt[chan_cnt] =0;
+//aFH: Resets central loss cent & switch channel counter for particular peripheral if get rx received
+						periph_on_sync[periph_cnt]= true;
+						tmp_central_success[periph_cnt] = true;
+						periph_loss_sync_cnt[periph_cnt] =0;
+/************JS Modify: Add to fix the hop issue when interference   
+				     go to here if get data received **********************************/
+			if (periph_cnt ==1)
+			{		
+						if ( (periph_on_sync[0]?tmp_central_success[0]:true) && (periph_on_sync[1]?tmp_central_success[1]: true) )
+						{	
+									central_loss_cnt[chan_cnt] =0;	//reset loss cnt if rcv pkt from both periphs 
+											
+						}
+
+				
+			}				
+			
 			//switch_channel_counter[periph_cnt] = 0;
-			//if ( (central_loss_cnt[0]==0)  && (central_loss_cnt[1]==0) )
+		
 			update_ch_tab_flag = true;
 
 			//m_log_success_cnt[periph_cnt]++; //log
 			 gpio_pin_set(dbg_port, dbg_pins[periph_cnt],0); //clear the debug pin if received data 	
-			//if(periph_cnt!=0)
-			//	gpio_pin_set(dbg_port, dbg_pins[(periph_cnt -1) % NUM_OF_PERIPH], 0); //clear the debug pin if received data 
-			//else  
-			//	gpio_pin_set(dbg_port, dbg_pins[NUM_OF_PERIPH-1], 0);
-											
+	
 			m_event_callback(RADIO_CENTRAL_DATA_RECEIVED);		   
 							
 			break;
@@ -383,6 +410,18 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 				chan_cnt = (chan_cnt +1) % RADIO_CHAN_TAB_SIZE;		
 				esb_set_rf_channel(m_radio_chan_tab[chan_cnt]);
 			}
+			else //periph_cnt =1
+			{
+				if ( (periph_on_sync[0]?tmp_central_success[0]:true) && (periph_on_sync[1]?tmp_central_success[1]: true) )
+				{	
+							central_loss_cnt[chan_cnt] =0;	//reset loss cnt if rcv pkt from both periphs 
+					
+							//Reset the tmp array	
+							tmp_central_success[0] = false;
+							tmp_central_success[1] = false;
+				}
+			}	
+			
 			//m_log_total_cnt[periph_cnt]++; //log
 		}
 		

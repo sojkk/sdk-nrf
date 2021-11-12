@@ -25,6 +25,8 @@
 
 #define	DATA_PIPE                   0
 
+#define PERIPH_ON_SYNC_CNT			100
+
 #define SYSTEM_ADDRESS              {0xC2, 0xC2, 0xC2, 0xC2}
 
 #define LOG_CNT                     1000
@@ -41,7 +43,7 @@
 #define POLL_TICKS                  30 //30.5 us  PER TICK  
 
 
-#define RX_SEARCH_PERIOD            POLL_TICKS * (NUM_OF_PERIPH+2)
+#define RX_SEARCH_PERIOD            POLL_TICKS * (NUM_OF_PERIPH+1) *  RADIO_CHAN_TAB_SIZE
 #define RX_OPERATE_PERIOD_W_WAIT    POLL_TICKS * (NUM_OF_PERIPH-1) -ADJ 
 #define	RX_WAIT_FOR_ACK_WR_PERIOD			ADJ
 #define RX_OPERATE_PERIOD           POLL_TICKS * (NUM_OF_PERIPH)
