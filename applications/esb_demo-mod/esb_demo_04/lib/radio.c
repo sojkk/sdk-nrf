@@ -372,7 +372,9 @@ static void nrf_esb_ptx_event_handler(struct esb_evt const * p_event)
 			{		
 						if ( (periph_on_sync[0]?tmp_central_success[0]:true) && (periph_on_sync[1]?tmp_central_success[1]: true) )
 						{	
-									central_loss_cnt[chan_cnt] =0;	//reset loss cnt if rcv pkt from both periphs 
+									//central_loss_cnt[chan_cnt] =0;	//reset loss cnt if rcv pkt from both periphs
+								if(central_loss_cnt[chan_cnt]!=0)
+									central_loss_cnt[chan_cnt]--;
 											
 						}
 
