@@ -103,36 +103,20 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 	switch (evt->type) {
 	case UART_TX_DONE:
 	
-		printk("tx_done");
-		if ((evt->data.tx.len == 0) ||
-		    (!evt->data.tx.buf)) {
-			return;
-		}
-
-		if (aborted_buf) {
-			buf = CONTAINER_OF(aborted_buf, struct uart_data_t,
-					   data);
-			aborted_buf = NULL;
-			aborted_len = 0;
-		} else {
-			buf = CONTAINER_OF(evt->data.tx.buf, struct uart_data_t,
-					   data);
-		}
-
-		k_free(buf);
-
-		buf = k_fifo_get(&fifo_uart_tx_data, K_NO_WAIT);
-		if (!buf) {
-			return;
-		}
-
-		if (uart_tx(uart, buf->data, buf->len, SYS_FOREVER_MS)) {
-			LOG_WRN("Failed to send data over UART");
-		}
-	
 		break;
 	
 	case UART_RX_RDY:
+	
+		LOG_DBG("rx_buf_request");
+		buf = k_malloc(sizeof(*buf));
+		if (buf) {
+			buf->len = 0;
+			uart_rx_buf_rsp(uart, buf->data, sizeof(buf->data));
+		} else {
+			LOG_WRN("Not able to allocate UART receive buffer");
+		}
+		
+		//Send BLE mesh 
 	
 		break;
 	
@@ -142,9 +126,27 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 	
 	case UART_RX_BUF_REQUEST:
 	
+		LOG_DBG("rx_buf_request");
+		buf = k_malloc(sizeof(*buf));
+		if (buf) {
+			buf->len = 0;
+			uart_rx_buf_rsp(uart, buf->data, sizeof(buf->data));
+		} else {
+			LOG_WRN("Not able to allocate UART receive buffer");
+		}
+
 		break;
 	
 	case UART_RX_BUF_RELEASED:
+	
+		LOG_DBG("rx_buf_released");
+		buf = CONTAINER_OF(evt->data.rx_buf.buf, struct uart_data_t,
+				   data);
+		if (buf_release && (current_buf != evt->data.rx_buf.buf)) {
+			k_free(buf);
+			buf_release = false;
+			current_buf = NULL;
+		}
 	
 		break;
 	
@@ -338,3 +340,12 @@ const struct bt_mesh_comp *model_handler_init(void)
 
 	return &comp;
 }
+
+void ble_write_thread(void)
+{
+	
+	
+}
+
+K_THREAD_DEFINE(ble_write_thread_id, STACKSIZE, ble_write_thread, NULL, NULL,
+		NULL, PRIORITY, 0, 0);
