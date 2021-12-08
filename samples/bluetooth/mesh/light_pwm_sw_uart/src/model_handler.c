@@ -26,9 +26,13 @@
 #define STACKSIZE CONFIG_UART_THREAD_STACK_SIZE
 #define PRIORITY 7
 
-#define UART_BUF_SIZE CONFIG_UART_BUFFER_SIZE
+#define UART_BUF_SIZE 3
 #define UART_WAIT_FOR_BUF_DELAY K_MSEC(50)
 #define UART_WAIT_FOR_RX CONFIG_UART_RX_WAIT_TIME
+
+#define UART_BUF_ELT	0
+#define UART_BUF_LVL	1
+#define UART_BUF_TAIL	2
 
 static const struct device *uart;
 static struct k_work_delayable uart_work;
@@ -107,16 +111,19 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 	
 	case UART_RX_RDY:
 	
-		LOG_DBG("rx_buf_request");
-		buf = k_malloc(sizeof(*buf));
-		if (buf) {
-			buf->len = 0;
-			uart_rx_buf_rsp(uart, buf->data, sizeof(buf->data));
-		} else {
-			LOG_WRN("Not able to allocate UART receive buffer");
+		LOG_DBG("rx_rdy");
+		buf = CONTAINER_OF(evt->data.rx.buf, struct uart_data_t, data);
+		buf->len += evt->data.rx.len;
+		buf_release = false;
+
+		if ((evt->data.rx.buf[buf->len - 1] == '\n') ||
+			  (evt->data.rx.buf[buf->len - 1] == '\r')) {
+			k_fifo_put(&fifo_uart_rx_data, buf);
+			current_buf = evt->data.rx.buf;
+			buf_release = true;
+			uart_rx_disable(uart);
 		}
-		
-		//Send BLE mesh 
+	
 	
 		break;
 	
@@ -143,10 +150,44 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 		buf = CONTAINER_OF(evt->data.rx_buf.buf, struct uart_data_t,
 				   data);
 		if (buf_release && (current_buf != evt->data.rx_buf.buf)) {
+			
 			k_free(buf);
 			buf_release = false;
 			current_buf = NULL;
+	
+			//Send rx_buf data thru BLE mesh
+			buf = k_fifo_get(&fifo_uart_rx_data, K_FOREVER);
+			
+			int err;
+			uint8_t i = buf.data[UART_BUF_ELT];
+
+				
+			struct bt_mesh_lvl_set set = {
+				.lvl = buf.data[UART_BUF_LVL] ,
+				.new_transaction = true,
+			}
+			
+			
+			if (bt_mesh_model_pub_is_unicast(uart_elts[i].client.model)) {
+				err = bt_mesh_lvl_cli_set(&uart_elts[i].client, NULL,
+								&set, NULL);
+			} else {
+				err = bt_mesh_lvl_cli_set_unack(&uart_elts[i].client,
+								  NULL, &set);
+				if (!err) {
+					/* There'll be no response status for the
+					 * unacked message. Set the state immediately.
+					 */
+					uart_elts[i].status = set.lvl;
+				}
+			}
+
+			if (err) {
+				printk("Level %d set failed: %d\n", i + 1, err);
+			}
+		
 		}
+		
 	
 		break;
 	
@@ -341,11 +382,3 @@ const struct bt_mesh_comp *model_handler_init(void)
 	return &comp;
 }
 
-void ble_write_thread(void)
-{
-	
-	
-}
-
-K_THREAD_DEFINE(ble_write_thread_id, STACKSIZE, ble_write_thread, NULL, NULL,
-		NULL, PRIORITY, 0, 0);
