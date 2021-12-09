@@ -69,12 +69,12 @@ static void button_handler_cb(uint32_t pressed, uint32_t changed)
 		int tmp = (i < 2)? i : (i - 2);
 		
 		
-		if  ( (i < 2) && (buttons[tmp].status ==0x7000) )
+		if  ( (i < 2) && (BT_MESH_LVL_MAX-buttons[tmp].status <= 0x0FFF) )
 		{		
 			continue;
 		}
 		
-		if  ( (i >= 2) && (buttons[tmp].status == BT_MESH_LVL_MIN) )
+		if  ( (i >= 2) && (buttons[tmp].status-BT_MESH_LVL_MIN < 0x0FFF) )
 		{
 			continue;
 		}

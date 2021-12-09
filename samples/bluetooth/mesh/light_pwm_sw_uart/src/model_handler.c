@@ -20,19 +20,26 @@
 #include <device.h>
 #include <soc.h>
 #include <dk_buttons_and_leds.h>
-#include "uart_async_adapter.h"
+//#include "uart_async_adapter.h"
 #include "model_handler.h"
+
+#include <stdio.h>
+#include <logging/log.h>
+
+#define LOG_MODULE_NAME model_handler
+LOG_MODULE_REGISTER(LOG_MODULE_NAME);
 
 #define STACKSIZE CONFIG_UART_THREAD_STACK_SIZE
 #define PRIORITY 7
 
-#define UART_BUF_SIZE 3
+#define UART_BUF_SIZE 4
 #define UART_WAIT_FOR_BUF_DELAY K_MSEC(50)
-#define UART_WAIT_FOR_RX CONFIG_UART_RX_WAIT_TIME
-
-#define UART_BUF_ELT	0
-#define UART_BUF_LVL	1
-#define UART_BUF_TAIL	2
+#define UART_WAIT_FOR_RX 50
+/* UART packet content */
+#define UART_BUF_ELT		0
+#define UART_BUF_LVL_LO		1
+#define UART_BUF_LVL_HI		2
+#define UART_BUF_TAIL		3
 
 static const struct device *uart;
 static struct k_work_delayable uart_work;
@@ -46,11 +53,14 @@ struct uart_data_t {
 static K_FIFO_DEFINE(fifo_uart_tx_data);
 static K_FIFO_DEFINE(fifo_uart_rx_data);
 
+/*
 #if CONFIG_UART_ASYNC_ADAPTER
 UART_ASYNC_ADAPTER_INST_DEFINE(async_adapter);
 #else
 static const struct device *const async_adapter;
-#en
+#endif
+*/
+
 
 /* Light switch behavior */
 
@@ -94,10 +104,10 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 	ARG_UNUSED(dev);
 
 	static uint8_t *current_buf;
-	static size_t aborted_len;
+	//static size_t aborted_len;
 	static bool buf_release;
 	struct uart_data_t *buf;
-	static uint8_t *aborted_buf;
+	//static uint8_t *aborted_buf;
 	
 	
 	if (!bt_mesh_is_provisioned()) {
@@ -129,6 +139,19 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 	
 	case UART_RX_DISABLED:
 	
+		LOG_DBG("rx_disabled");
+		buf = k_malloc(sizeof(*buf));
+		if (buf) {
+			buf->len = 0;
+		} else {
+			LOG_WRN("Not able to allocate UART receive buffer");
+			k_work_reschedule(&uart_work, UART_WAIT_FOR_BUF_DELAY);
+			return;
+		}
+
+		uart_rx_enable(uart, buf->data, sizeof(buf->data),
+			       UART_WAIT_FOR_RX);
+				   
 		break;
 	
 	case UART_RX_BUF_REQUEST:
@@ -151,6 +174,10 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 				   data);
 		if (buf_release && (current_buf != evt->data.rx_buf.buf)) {
 			
+			
+			int err;
+			
+			
 			k_free(buf);
 			buf_release = false;
 			current_buf = NULL;
@@ -158,14 +185,12 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 			//Send rx_buf data thru BLE mesh
 			buf = k_fifo_get(&fifo_uart_rx_data, K_FOREVER);
 			
-			int err;
-			uint8_t i = buf.data[UART_BUF_ELT];
-
-				
 			struct bt_mesh_lvl_set set = {
-				.lvl = buf.data[UART_BUF_LVL] ,
+				.lvl = (buf->data[UART_BUF_LVL_LO]) | (buf->data[UART_BUF_LVL_HI] << 8),
 				.new_transaction = true,
-			}
+			};
+			
+			uint8_t i = buf->data[UART_BUF_ELT];
 			
 			
 			if (bt_mesh_model_pub_is_unicast(uart_elts[i].client.model)) {
@@ -185,10 +210,8 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 			if (err) {
 				printk("Level %d set failed: %d\n", i + 1, err);
 			}
-		
 		}
-		
-	
+
 		break;
 	
 	case UART_TX_ABORTED:
@@ -198,8 +221,7 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 	default:
 	
 		break;
-	
-
+	}
 }
 
 /* Set up a repeating delayed work to blink the DK's LEDs when attention is
@@ -279,6 +301,33 @@ static const struct bt_mesh_comp comp = {
 	.elem_count = ARRAY_SIZE(elements),
 };
 
+
+static void uart_work_handler(struct k_work *item)
+{
+	struct uart_data_t *buf;
+
+	buf = k_malloc(sizeof(*buf));
+	if (buf) {
+		buf->len = 0;
+	} else {
+		LOG_WRN("Not able to allocate UART receive buffer");
+		k_work_reschedule(&uart_work, UART_WAIT_FOR_BUF_DELAY);
+		return;
+	}
+
+	uart_rx_enable(uart, buf->data, sizeof(buf->data), UART_WAIT_FOR_RX);
+}
+
+/*
+static bool uart_test_async_api(const struct device *dev)
+{
+	const struct uart_driver_api *api =
+			(const struct uart_driver_api *)dev->api;
+
+	return (api->callback_set != NULL);
+}
+*/
+
 static int uart_init(void)
 {
 	int err;
@@ -286,7 +335,7 @@ static int uart_init(void)
 	struct uart_data_t *rx;
 	struct uart_data_t *tx;
 
-	uart = device_get_binding(UART_DEV);
+	uart = device_get_binding("UART_0");
 	if (!uart) {
 		return -ENXIO;
 	}
@@ -308,13 +357,13 @@ static int uart_init(void)
 
 	k_work_init_delayable(&uart_work, uart_work_handler);
 
-
+/*
 	if (IS_ENABLED(CONFIG_UART_ASYNC_ADAPTER) && !uart_test_async_api(uart)) {
-		/* Implement API adapter */
+		//Implement API adapter 
 		uart_async_adapter_init(async_adapter, uart);
 		uart = async_adapter;
 	}
-
+*/
 	err = uart_callback_set(uart, uart_cb, NULL);
 	if (err) {
 		LOG_ERR("Cannot initialize UART callback");
