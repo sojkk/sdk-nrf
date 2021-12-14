@@ -337,9 +337,10 @@ static int uart_init(void)
 
 	uart = device_get_binding("UART_0");
 	if (!uart) {
+		LOG_ERR("Failed to enable UART");
 		return -ENXIO;
 	}
-
+/*
 	if (IS_ENABLED(CONFIG_USB)) {
 		err = usb_enable(NULL);
 		if (err) {
@@ -347,7 +348,7 @@ static int uart_init(void)
 			return err;
 		}
 	}
-
+*/
 	rx = k_malloc(sizeof(*rx));
 	if (rx) {
 		rx->len = 0;
