@@ -32,7 +32,7 @@ LOG_MODULE_REGISTER(LOG_MODULE_NAME);
 #define STACKSIZE CONFIG_UART_THREAD_STACK_SIZE
 #define PRIORITY 7
 
-#define UART_BUF_SIZE 4
+#define UART_BUF_SIZE 40
 #define UART_WAIT_FOR_BUF_DELAY K_MSEC(50)
 #define UART_WAIT_FOR_RX 50
 /* UART packet content */
@@ -121,7 +121,7 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 	
 	case UART_RX_RDY:
 	
-		LOG_DBG("rx_rdy");
+		printk("rx_rdy\r\n");
 		buf = CONTAINER_OF(evt->data.rx.buf, struct uart_data_t, data);
 		buf->len += evt->data.rx.len;
 		buf_release = false;
@@ -139,7 +139,7 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 	
 	case UART_RX_DISABLED:
 	
-		LOG_DBG("rx_disabled");
+		printk("rx_disabled\r\n");
 		buf = k_malloc(sizeof(*buf));
 		if (buf) {
 			buf->len = 0;
@@ -156,7 +156,7 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 	
 	case UART_RX_BUF_REQUEST:
 	
-		LOG_DBG("rx_buf_request");
+		printk("rx_buf_request\r\n");
 		buf = k_malloc(sizeof(*buf));
 		if (buf) {
 			buf->len = 0;
@@ -169,7 +169,7 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 	
 	case UART_RX_BUF_RELEASED:
 	
-		LOG_DBG("rx_buf_released");
+		printk("rx_buf_released\r\n");
 		buf = CONTAINER_OF(evt->data.rx_buf.buf, struct uart_data_t,
 				   data);
 		if (buf_release && (current_buf != evt->data.rx_buf.buf)) {
@@ -416,7 +416,7 @@ static int uart_init(void)
 		LOG_ERR("Cannot display welcome message (err: %d)", err);
 		return err;
 	}
-
+	printk("uart initialized...\r\n");
 	return uart_rx_enable(uart, rx->data, sizeof(rx->data), 50);
 }
 
