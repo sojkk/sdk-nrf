@@ -20,7 +20,6 @@
 #include <device.h>
 #include <soc.h>
 #include <dk_buttons_and_leds.h>
-//#include "uart_async_adapter.h"
 #include "model_handler.h"
 
 #include <stdio.h>
@@ -53,13 +52,6 @@ struct uart_data_t {
 static K_FIFO_DEFINE(fifo_uart_tx_data);
 static K_FIFO_DEFINE(fifo_uart_rx_data);
 
-/*
-#if CONFIG_UART_ASYNC_ADAPTER
-UART_ASYNC_ADAPTER_INST_DEFINE(async_adapter);
-#else
-static const struct device *const async_adapter;
-#endif
-*/
 
 
 /* Light switch behavior */
@@ -103,11 +95,8 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 {
 	ARG_UNUSED(dev);
 
-	static uint8_t *current_buf;
-	//static size_t aborted_len;
 	static bool buf_release;
 	struct uart_data_t *buf;
-	//static uint8_t *aborted_buf;
 	
 	
 	if (!bt_mesh_is_provisioned()) {
@@ -121,7 +110,7 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 	
 	case UART_RX_RDY:
 	
-		printk("rx_rdy\r\n");
+		printk("rx_rdy\r");
 		buf = CONTAINER_OF(evt->data.rx.buf, struct uart_data_t, data);
 		buf->len += evt->data.rx.len;
 		buf_release = false;
@@ -129,7 +118,6 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 		if ((evt->data.rx.buf[buf->len - 1] == '\n') ||
 			  (evt->data.rx.buf[buf->len - 1] == '\r')) {
 			k_fifo_put(&fifo_uart_rx_data, buf);
-			current_buf = evt->data.rx.buf;
 			buf_release = true;
 			uart_rx_disable(uart);
 		}
@@ -139,7 +127,7 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 	
 	case UART_RX_DISABLED:
 	
-		printk("rx_disabled\r\n");
+		printk("rx_disabled\r");
 		buf = k_malloc(sizeof(*buf));
 		if (buf) {
 			buf->len = 0;
@@ -156,7 +144,7 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 	
 	case UART_RX_BUF_REQUEST:
 	
-		printk("rx_buf_request\r\n");
+		printk("rx_buf_request\r");
 		buf = k_malloc(sizeof(*buf));
 		if (buf) {
 			buf->len = 0;
@@ -169,18 +157,17 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 	
 	case UART_RX_BUF_RELEASED:
 	
-		printk("rx_buf_released\r\n");
+		printk("rx_buf_released\r");
 		buf = CONTAINER_OF(evt->data.rx_buf.buf, struct uart_data_t,
 				   data);
-		if (buf_release && (current_buf != evt->data.rx_buf.buf)) {
-			
+
+		if (buf_release ) {	
 			
 			int err;
 			
 			
 			k_free(buf);
 			buf_release = false;
-			current_buf = NULL;
 	
 			//Send rx_buf data thru BLE mesh
 			buf = k_fifo_get(&fifo_uart_rx_data, K_FOREVER);
@@ -191,7 +178,7 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 			};
 			
 			uint8_t i = buf->data[UART_BUF_ELT];
-			
+
 			
 			if (bt_mesh_model_pub_is_unicast(uart_elts[i].client.model)) {
 				err = bt_mesh_lvl_cli_set(&uart_elts[i].client, NULL,
@@ -318,15 +305,6 @@ static void uart_work_handler(struct k_work *item)
 	uart_rx_enable(uart, buf->data, sizeof(buf->data), UART_WAIT_FOR_RX);
 }
 
-/*
-static bool uart_test_async_api(const struct device *dev)
-{
-	const struct uart_driver_api *api =
-			(const struct uart_driver_api *)dev->api;
-
-	return (api->callback_set != NULL);
-}
-*/
 
 static int uart_init(void)
 {
@@ -340,15 +318,7 @@ static int uart_init(void)
 		LOG_ERR("Failed to enable UART");
 		return -ENXIO;
 	}
-/*
-	if (IS_ENABLED(CONFIG_USB)) {
-		err = usb_enable(NULL);
-		if (err) {
-			LOG_ERR("Failed to enable USB");
-			return err;
-		}
-	}
-*/
+
 	rx = k_malloc(sizeof(*rx));
 	if (rx) {
 		rx->len = 0;
@@ -358,13 +328,6 @@ static int uart_init(void)
 
 	k_work_init_delayable(&uart_work, uart_work_handler);
 
-/*
-	if (IS_ENABLED(CONFIG_UART_ASYNC_ADAPTER) && !uart_test_async_api(uart)) {
-		//Implement API adapter 
-		uart_async_adapter_init(async_adapter, uart);
-		uart = async_adapter;
-	}
-*/
 	err = uart_callback_set(uart, uart_cb, NULL);
 	if (err) {
 		LOG_ERR("Cannot initialize UART callback");
@@ -416,7 +379,6 @@ static int uart_init(void)
 		LOG_ERR("Cannot display welcome message (err: %d)", err);
 		return err;
 	}
-	printk("uart initialized...\r\n");
 	return uart_rx_enable(uart, rx->data, sizeof(rx->data), 50);
 }
 
