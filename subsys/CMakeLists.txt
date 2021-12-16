@@ -14,6 +14,7 @@ add_subdirectory_ifdef(CONFIG_SECURE_BOOT_STORAGE bootloader/bl_storage)
 
 add_subdirectory(net)
 add_subdirectory_ifdef(CONFIG_ESB		esb)
+add_subdirectory_ifdef(CONFIG_INV_ESB		inv_esb)
 add_subdirectory_ifdef(CONFIG_EVENT_MANAGER	event_manager)
 add_subdirectory_ifdef(CONFIG_EVENT_MANAGER	event_manager_profiler_tracer)
 add_subdirectory_ifdef(CONFIG_CAF		caf)
