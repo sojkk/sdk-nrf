@@ -26,7 +26,7 @@
 #include <logging/log.h>
 
 #define LOG_MODULE_NAME model_handler
-LOG_MODULE_REGISTER(LOG_MODULE_NAME);
+LOG_MODULE_REGISTER(LOG_MODULE_NAME, 3);
 
 #define STACKSIZE CONFIG_UART_THREAD_STACK_SIZE
 #define PRIORITY 7
@@ -110,7 +110,7 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 	
 	case UART_RX_RDY:
 	
-		printk("rx_rdy\r");
+		LOG_INF("rx_rdy");
 		buf = CONTAINER_OF(evt->data.rx.buf, struct uart_data_t, data);
 		buf->len += evt->data.rx.len;
 		buf_release = false;
@@ -127,7 +127,7 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 	
 	case UART_RX_DISABLED:
 	
-		printk("rx_disabled\r");
+		LOG_INF("rx_disabled");
 		buf = k_malloc(sizeof(*buf));
 		if (buf) {
 			buf->len = 0;
@@ -144,7 +144,7 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 	
 	case UART_RX_BUF_REQUEST:
 	
-		printk("rx_buf_request\r");
+		LOG_INF("rx_buf_request");
 		buf = k_malloc(sizeof(*buf));
 		if (buf) {
 			buf->len = 0;
@@ -157,7 +157,7 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 	
 	case UART_RX_BUF_RELEASED:
 	
-		printk("rx_buf_released\r");
+		LOG_INF("rx_buf_released");
 		buf = CONTAINER_OF(evt->data.rx_buf.buf, struct uart_data_t,
 				   data);
 
