@@ -5,4 +5,4 @@
 #
 
 zephyr_library()
-zephyr_library_sources_ifdef(CONFIG_INV_ESB inv_esb.c)
+zephyr_library_sources_ifdef(CONFIG_FAST_ESB fast_esb.c)

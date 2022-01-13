@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
  */
-#include <inv_esb.h>
+#include <fast_esb.h>
 #include "radio.h"
 #include "radio_config.h"
 #include <drivers/clock_control.h>

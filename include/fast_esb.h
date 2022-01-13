@@ -3,8 +3,8 @@
  *
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
-#ifndef __INV_ESB_H
-#define __INV_ESB_H
+#ifndef __FAST_ESB_H
+#define __FAST_ESB_H
 
 #include <errno.h>
 #include <sys/util.h>

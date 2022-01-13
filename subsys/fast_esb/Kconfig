@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
 #
 
-menuconfig INV_ESB
+menuconfig FAST_ESB
 	bool "Enhanced ShockBurst"
 	select NRFX_PPI if HAS_HW_NRF_PPI
 	select NRFX_DPPI if HAS_HW_NRF_DPPIC
@@ -12,7 +12,7 @@ menuconfig INV_ESB
 	help
 	  Enable ESB functionality.
 
-if INV_ESB
+if FAST_ESB
 
 config ESB_FAST_RAMP
 	bool "Radio fast ramp up"

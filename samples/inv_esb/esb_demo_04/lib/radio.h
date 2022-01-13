@@ -11,7 +11,7 @@
 #endif
 #include "nrfx_timer.h"
 
-#include <inv_esb.h>
+#include <fast_esb.h>
 
 #define RADIO_RTC                       NRF_RTC0
 #define RADIO_RTC_IRQn                  RTC0_IRQn

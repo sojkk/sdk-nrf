@@ -13,7 +13,7 @@ rsource "dfu/Kconfig"
 
 rsource "esb/Kconfig"
 
-rsource "inv_esb/Kconfig"
+rsource "fast_esb/Kconfig"
 
 rsource "gazell/Kconfig"
 

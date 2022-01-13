@@ -15,7 +15,7 @@
 #include <string.h>
 
 #include <nrf.h>
-#include <inv_esb.h>
+#include <fast_esb.h>
 #include "radio.h"
 
 #include <ipc/rpmsg_service.h>
