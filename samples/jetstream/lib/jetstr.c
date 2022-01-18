@@ -38,11 +38,20 @@
  * 
  */
 
-#include <stdint.h>
-#include <stdbool.h>
-#include "sdk_common.h"
-#include "boards.h"
+#include "esb_k.h"
 #include "jetstr.h"
+#include "jetstr_config.h"
+#include <drivers/clock_control.h>
+#include <drivers/clock_control/nrf_clock_control.h>
+#include <drivers/gpio.h>
+#include <irq.h>
+#include <logging/log.h>
+#include <string.h>
+#include <nrf.h>
+#include <zephyr.h>
+#include <zephyr/types.h>
+#include <hal/nrf_gpio.h>
+
 
 static uint8_t pipe0_addr[] = SYSTEM_ADDRESS;
 
@@ -68,9 +77,7 @@ static uint8_t channel_attempts = 0;
 
 static uint8_t jetstr_channel_cnt = 0;
 
-
-
-app_sched_event_handler_t     jetstr_event_callback;
+static event_callback_t    jetstr_event_callback;
 
 
 static void nrf_esb_ptx_event_handler(nrf_esb_evt_t const * p_event)
@@ -142,7 +149,7 @@ static void nrf_esb_ptx_event_handler(nrf_esb_evt_t const * p_event)
             break;					
     }
 		
-    app_sched_event_put(&evt, sizeof(evt), jetstr_event_callback);
+    jetstr_event_callback(&evt);
 }	
 
 volatile  static uint16_t jetstr_tx_period;
@@ -182,11 +189,8 @@ static void nrf_esb_prx_event_handler(nrf_esb_evt_t const * p_event)
             		
          			evt.rcv_length = rx_buf.length;
 							memcpy(evt.rcv_data, rx_buf.data, evt.rcv_length) ;
-							app_sched_event_put(&evt, sizeof(evt), jetstr_event_callback);
-
-			
-                                                    
-        								
+							jetstr_event_callback(&evt);
+      								
 							retx_num = rx_buf.data[0]; 				
 
 							JETSTR_SYS_TIMER->TASKS_STOP  =1;	

@@ -60,6 +60,11 @@
 #define DBG_SIG_RF_RCV                     27                 //Debug signal for packet received
 #define DBG_SIG_TIM_IRQ                    26                 //Debug signal for system timer interrupt
 
+
+/** @brief Event handler prototype. */
+typedef void (*event_callback_t)(jetstr_evt_t *event);
+
+
 /**@brief JETSTR config parameters. */
 typedef struct
 {
