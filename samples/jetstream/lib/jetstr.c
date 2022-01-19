@@ -53,6 +53,8 @@
 #include <hal/nrf_gpio.h>
 
 
+static const struct device *dbg_port;
+
 static uint8_t pipe0_addr[] = SYSTEM_ADDRESS;
 
 static bool first_rnd_sw = false;
@@ -77,7 +79,7 @@ static uint8_t channel_attempts = 0;
 
 static uint8_t jetstr_channel_cnt = 0;
 
-static event_callback_t    jetstr_event_callback;
+static jetstr_evt_callback_t    jetstr_event_callback;
 
 
 static void nrf_esb_ptx_event_handler(nrf_esb_evt_t const * p_event)
@@ -216,56 +218,64 @@ static void nrf_esb_prx_event_handler(nrf_esb_evt_t const * p_event)
 
 
 
-static uint32_t esb_init(nrf_esb_mode_t mode)
+static int jetstr_esb_init(enum esb_mode mode)
 {
-    uint32_t err_code;
+    int err;
     uint8_t base_addr_0[4] ;
     uint8_t addr_prefix[] = {1}; 
 		
-		memcpy(base_addr_0, pipe0_addr	, 4);
+	memcpy(base_addr_0, pipe0_addr	, 4);
 		
     channel_cnt =0;
 	
-    nrf_esb_config_t nrf_esb_config         = NRF_ESB_DEFAULT_CONFIG;
-    nrf_esb_config.protocol                 = NRF_ESB_PROTOCOL_ESB_DPL;
+    struct esb_config	config			= NRF_ESB_DEFAULT_CONFIG;
+    config.protocol	                    = NRF_ESB_PROTOCOL_ESB_DPL;
 		
 #ifdef NRF52840_XXAA		
-    nrf_esb_config.tx_output_power          = NRF_ESB_TX_POWER_8DBM;  
+    config.tx_output_power				= NRF_ESB_TX_POWER_8DBM;  
 #else		
 
-   nrf_esb_config.tx_output_power          = NRF_ESB_TX_POWER_4DBM; 
+	config.tx_output_power				= NRF_ESB_TX_POWER_4DBM; 
 #endif	
 	
-//	     nrf_esb_config.tx_output_power          = NRF_ESB_TX_POWER_NEG20DBM;   //<-- for testing only	
+//	config.tx_output_power              = NRF_ESB_TX_POWER_NEG20DBM;   //<-- for testing only	
 		
-   nrf_esb_config.mode                     = mode;
-  if (mode == NRF_ESB_MODE_PTX)	
-  {	
-    nrf_esb_config.event_handler            = nrf_esb_ptx_event_handler;
-    nrf_esb_config.selective_auto_ack       = false;
-    nrf_esb_config.retransmit_count         = m_jetstr_cfg_params.jetstr_retran_cnt_out_of_sync;
-  }	
-  else if (mode == NRF_ESB_MODE_PRX)
-  {	
-    nrf_esb_config.event_handler            = nrf_esb_prx_event_handler; 
-  }
+	config.mode                     		= mode;
+	if (mode == ESB_MODE_PTX)	
+	{	
+	config.event_handler            = esb_ptx_event_handler;
+	config.selective_auto_ack       = false;
+	config.retransmit_count         = m_jetstr_cfg_params.jetstr_retran_cnt_out_of_sync;
+	}	
+	else if (mode == ESB_MODE_PRX)
+	{	
+		config.event_handler            = esb_prx_event_handler; 
+	}
 
-  err_code = nrf_esb_init(&nrf_esb_config);
-  VERIFY_SUCCESS(err_code);
+	err = esb_init(&config);
+	if (err) {
+		return err;
+	}
 		
-  err_code = nrf_esb_set_rf_channel(rf_channel_tab[channel_cnt]);
-  VERIFY_SUCCESS(err_code);
+	err = esb_set_rf_channel(rf_channel_tab[channel_cnt]);
+	if (err) {
+		return err;
+	}
+	
 
-  err_code = nrf_esb_set_base_address_0(base_addr_0);
-  VERIFY_SUCCESS(err_code);
+	err = esb_set_base_address_0(base_addr_0);
+	if (err) {
+			return err;
+		}
+	
 
-  err_code = nrf_esb_set_prefixes(addr_prefix, sizeof(addr_prefix));
-  VERIFY_SUCCESS(err_code);
-		
-
-
-  if (mode == NRF_ESB_MODE_PTX)
-  {	
+	err = esb_set_prefixes(addr_prefix, sizeof(addr_prefix));
+	if (err) {
+			return err;
+		}
+	
+	if (mode == NRF_ESB_MODE_PTX)
+	{	
 #ifdef DBG_SIG_ENABLE	 	
      nrf_gpio_cfg_output(DBG_SIG_POLL_EXP);
      nrf_gpio_cfg_output(DBG_SIG_SEND_PKT);
@@ -273,7 +283,7 @@ static uint32_t esb_init(nrf_esb_mode_t mode)
      nrf_gpio_cfg_output(DBG_SIG_RETX);
      nrf_gpio_cfg_output(DBG_SIG_TX_FAIL);
 #endif	
-  }			
+	}
    else if (mode == NRF_ESB_MODE_PRX)	
    {
 		 
@@ -292,7 +302,7 @@ static uint32_t esb_init(nrf_esb_mode_t mode)
 #endif			 
    }
 		
-   return err_code;
+   return 0;
 }
 
 void jetstr_hfclk_start(void)
@@ -316,17 +326,17 @@ void jetstr_hfclk_stop(void)
 void jetstr_init(const jetstr_cfg_t *  jetstr_cfg, const jetstr_cfg_params_t * jetstr_cfg_params)
 {
 	
-	  memcpy(&m_jetstr_cfg_params, jetstr_cfg_params, sizeof(m_jetstr_cfg_params));
-	
-		memcpy(rf_channel_tab, m_jetstr_cfg_params.jetstr_channel_tab, sizeof(rf_channel_tab));
-	
-		max_channel_attempts_before_discard = m_jetstr_cfg_params.jetstr_channel_tab_size +1;
+	memcpy(&m_jetstr_cfg_params, jetstr_cfg_params, sizeof(m_jetstr_cfg_params));
+
+	memcpy(rf_channel_tab, m_jetstr_cfg_params.jetstr_channel_tab, sizeof(rf_channel_tab));
+
+	max_channel_attempts_before_discard = m_jetstr_cfg_params.jetstr_channel_tab_size +1;
 
     jetstr_channel_cnt = 0;
 	
     jetstr_event_callback = jetstr_cfg->event_callback;
 	
-    esb_init(jetstr_cfg->mode);
+    jetstr_esb_init(jetstr_cfg->mode);
 	
 }
 	

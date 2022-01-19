@@ -38,10 +38,8 @@
  * 
  */
 
-#include <stdint.h>
-#include <stdbool.h>
-#include "app_scheduler.h"
-#include "nrf_esb.h"
+
+#include "esb_k.h"
 #include "jetstr_config.h"
 
 #define     JETSTR_SYS_TIMER                   NRF_TIMER1         /**< The timer which will be used by the module. */
@@ -61,8 +59,18 @@
 #define DBG_SIG_TIM_IRQ                    26                 //Debug signal for system timer interrupt
 
 
+struct jetstr_evt
+{
+	
+	jetstr_event_t   type;
+	uint8_t          rcv_data[5]; //JS Modify:  for Pixart INPUT_REP_MOVEMENT_LEN = 8
+	uint8_t          rcv_length;
+	
+};	
+
+
 /** @brief Event handler prototype. */
-typedef void (*event_callback_t)(jetstr_evt_t *event);
+typedef void (*jetstr_evt_callback_t)(const struct jetstr_evt *event);
 
 
 /**@brief JETSTR config parameters. */
@@ -70,9 +78,6 @@ typedef struct
 {
 	uint8_t  * jetstr_channel_tab;
 	uint8_t  jetstr_channel_tab_size;
-	//uint8_t  nrfr_data_hdr;
-	//uint8_t  nrfr_ctrl_hdr;
-	//uint8_t  nrfr_mouse_pipe;
 	uint16_t jetstr_rx_period;
 	uint16_t jetstr_rx_delay;
 	uint8_t  jetstr_retran_cnt_in_sync;
@@ -105,19 +110,12 @@ typedef enum
 
 typedef struct
 {
-  nrf_esb_mode_t            mode;
-	app_sched_event_handler_t event_callback;
+	nrf_esb_mode_t			mode;
+	jetstr_evt_callback_t	event_callback;
 	
 }jetstr_cfg_t;	
 
-typedef struct
-{
-	
-  jetstr_event_t   type;
-	uint8_t          rcv_data[5]; //JS Modify:  for Pixart INPUT_REP_MOVEMENT_LEN = 8
-	uint8_t          rcv_length;
-	
-}	jetstr_evt_t;
+
 
 void jetstr_init(const jetstr_cfg_t *  jetstr_cfg, const jetstr_cfg_params_t * jetstr_cfg_params);
 

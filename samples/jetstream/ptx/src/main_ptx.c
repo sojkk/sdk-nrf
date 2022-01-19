@@ -18,8 +18,6 @@
 
 LOG_MODULE_REGISTER(esb_ptx, CONFIG_ESB_PTX_APP_LOG_LEVEL);
 
-#define LED_ON 0
-#define LED_OFF 1
 
 /*****************************************************************************/
 /** @name Define */
@@ -63,18 +61,9 @@ static const uint8_t  led_pins[] = {DT_GPIO_PIN(DT_ALIAS(led0), gpios),
                                     DT_GPIO_PIN(DT_ALIAS(led1), gpios),
                                     DT_GPIO_PIN(DT_ALIAS(led2), gpios),
                                     DT_GPIO_PIN(DT_ALIAS(led3), gpios)};
-									
-									
-static const uint8_t  dbg_pins[] = {DATA_SENDING_P0,
-									DATA_SENDING_P1,
-									DATA_SENDING_P2,
-									DATA_SENDING_P3,
-									DATA_SENDING_P4,
-									DATA_SENDING_P5 };
+
 
 static const struct device *led_port;
-
-static const struct device *dbg_port;
 
 
 
@@ -88,7 +77,7 @@ int clocks_start(void)
 
 
 
-static int gpios_init(void)
+static int leds_init(void)
 {
 	int err;
 	
@@ -100,18 +89,14 @@ static int gpios_init(void)
 	}
 
 	for (size_t i = 0; i < ARRAY_SIZE(led_pins); i++) {
-		nrf_gpio_cfg_output(led_port, led_pins[i]);						
-		nrf_gpio_pin_set(led_port, led_pins[i]); 
-	}
-
-	dbg_port = device_get_binding(DT_LABEL(DT_NODELABEL(gpio0)));
-	if (!led_port) {
-		LOG_ERR("Could not bind to dbg port");
-	}
-	
-	for (size_t i = 0; i < ARRAY_SIZE(dbg_pins); i++) {
-		nrf_gpio_cfg_output(dbg_port, dbg_pins[i]);			
-		nrf_gpio_pin_clear(dbg_port, dbg_pins[i]); 
+		err = gpio_pin_configure(led_port, led_pins[i], GPIO_OUTPUT);
+		if (err) {
+				LOG_ERR("Unable to configure LED%u, err %d", i, err);
+				led_port = NULL;
+				return err;
+			}
+                      		
+		gpio_pin_set(led_port, led_pins[i], 1); 
 	}
 
 	return 0;
@@ -129,10 +114,10 @@ static void pkt_tx_handler(void * p_event_data, uint16_t event_size)
 								
 
 	// Toggle one of the LEDs.
-		nrf_gpio_pin_write(LED_1, !(tx_payload.data[1]%8>0 && tx_payload.data[1]%8<=4));
-		nrf_gpio_pin_write(LED_2, !(tx_payload.data[1]%8>1 && tx_payload.data[1]%8<=5));
-		nrf_gpio_pin_write(LED_3, !(tx_payload.data[1]%8>2 && tx_payload.data[1]%8<=6));
-		nrf_gpio_pin_write(LED_4, !(tx_payload.data[1]%8>3));
+		nrf_gpio_pin_set(led_port, led_pins[0], !(tx_payload.data[1]%8>0 && tx_payload.data[1]%8<=4));
+		nrf_gpio_pin_set(led_port, led_pins[1], !(tx_payload.data[1]%8>1 && tx_payload.data[1]%8<=5));
+		nrf_gpio_pin_set(led_port, led_pins[2], !(tx_payload.data[1]%8>2 && tx_payload.data[1]%8<=6));
+		nrf_gpio_pin_set(led_port, led_pins[3], !(tx_payload.data[1]%8>3));
 		tx_payload.data[1]++;
 
 #ifdef DBG_SIG_ENABLE	
@@ -145,7 +130,7 @@ static void pkt_tx_handler(void * p_event_data, uint16_t event_size)
 	
 }
 
-void jetstr_event_handler(void * p_event_data, uint16_t event_size)
+void jetstr_event_handler(jetstr_evt_t * p_event_data)
 {  
 	//uint16_t success_rate;
 	
@@ -153,7 +138,6 @@ void jetstr_event_handler(void * p_event_data, uint16_t event_size)
 	
 	jetstr_evt_t * evt;
 	
-	ASSERT(event_size == sizeof(jetstr_evt_t));
 	
 	evt = (jetstr_evt_t *) p_event_data;
 	
@@ -212,7 +196,7 @@ void main(void)
 		return;
 	}
 
-	gpios_init();
+	leds_init();
 
 	k_work_init(&pkt_tx_work, pkt_tx_handler);
 	
