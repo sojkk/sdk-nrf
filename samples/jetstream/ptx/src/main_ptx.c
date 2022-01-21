@@ -16,7 +16,7 @@
 #include "esb_k.h"
 #include "jetstr.h"
 
-LOG_MODULE_REGISTER(esb_ptx, CONFIG_ESB_PTX_APP_LOG_LEVEL);
+LOG_MODULE_REGISTER(esb_ptx, CONFIG_APP_LOG_LEVEL);
 
 
 /*****************************************************************************/
@@ -33,7 +33,7 @@ LOG_MODULE_REGISTER(esb_ptx, CONFIG_ESB_PTX_APP_LOG_LEVEL);
 
 static struct k_work pkt_tx_work;
 
-static nrf_esb_payload_t        tx_payload; 
+static struct esb_payload        tx_payload; 
 
 uint8_t data_packet[] = {	1,  0,  3,  4,  5,  6,  7,  8,
 							9, 10, 11, 12, 13, 14, 15, 16,
@@ -106,18 +106,18 @@ static int leds_init(void)
 static void pkt_tx_handler(void * p_event_data, uint16_t event_size)
 {
 
-	if  (esb_write_payload(&tx_payload) == NRF_SUCCESS) 
+	if  (esb_write_payload(&tx_payload) == 0) 
 	{
 #ifdef DBG_SIG_ENABLE	
-		gpio_pin_set(DBG_SIG_POLL_EXP);  
+		nrf_gpio_pin_set(DBG_SIG_POLL_EXP);  
 #endif							
 								
 
 	// Toggle one of the LEDs.
-		nrf_gpio_pin_set(led_port, led_pins[0], !(tx_payload.data[1]%8>0 && tx_payload.data[1]%8<=4));
-		nrf_gpio_pin_set(led_port, led_pins[1], !(tx_payload.data[1]%8>1 && tx_payload.data[1]%8<=5));
-		nrf_gpio_pin_set(led_port, led_pins[2], !(tx_payload.data[1]%8>2 && tx_payload.data[1]%8<=6));
-		nrf_gpio_pin_set(led_port, led_pins[3], !(tx_payload.data[1]%8>3));
+		gpio_pin_set(led_port, led_pins[0], !(tx_payload.data[1]%8>0 && tx_payload.data[1]%8<=4));
+		gpio_pin_set(led_port, led_pins[1], !(tx_payload.data[1]%8>1 && tx_payload.data[1]%8<=5));
+		gpio_pin_set(led_port, led_pins[2], !(tx_payload.data[1]%8>2 && tx_payload.data[1]%8<=6));
+		gpio_pin_set(led_port, led_pins[3], !(tx_payload.data[1]%8>3));
 		tx_payload.data[1]++;
 
 #ifdef DBG_SIG_ENABLE	
@@ -130,7 +130,7 @@ static void pkt_tx_handler(void * p_event_data, uint16_t event_size)
 	
 }
 
-void jetstr_event_handler(jetstr_evt_t * p_event_data)
+void jetstr_event_handler(struct jetstr_evt const * p_event_data)
 {  
 	//uint16_t success_rate;
 	

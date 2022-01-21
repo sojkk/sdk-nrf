@@ -81,17 +81,17 @@ static uint8_t jetstr_channel_cnt = 0;
 static jetstr_evt_callback_t    jetstr_event_callback;
 
 
-static void nrf_esb_ptx_event_handler(nrf_esb_evt_t const * p_event)
+static void esb_ptx_event_handler(struct esb_evt const * p_event)
 {
-    jetstr_evt_t evt;
+    struct jetstr_evt evt;
 	 
     evt.type = jetstr_evt_none;
 	 
     switch (p_event->evt_id)
     {
-        case NRF_ESB_EVENT_TX_SUCCESS:					 
+        case ESB_EVENT_TX_SUCCESS:					 
              evt.type = jetstr_evt_tx_success;
-             nrf_esb_set_retransmit_count(m_jetstr_cfg_params.jetstr_retran_cnt_in_sync);
+             esb_set_retransmit_count(m_jetstr_cfg_params.jetstr_retran_cnt_in_sync);
 #ifdef DBG_SIG_ENABLE						
             nrf_gpio_pin_set(DBG_SIG_TX_SUCCESS);
 #endif				
@@ -103,7 +103,7 @@ static void nrf_esb_ptx_event_handler(nrf_esb_evt_t const * p_event)
 //     if (!nrf_gpio_pin_read(BSP_LED_1))  nrf_gpio_pin_set(BSP_LED_1);
 				
             break;
-        case NRF_ESB_EVENT_TX_FAILED:					
+        case ESB_EVENT_TX_FAILED:					
 					  
            channel_cnt= (channel_cnt+1)% m_jetstr_cfg_params.jetstr_channel_tab_size;		
            channel_attempts++;
@@ -114,9 +114,9 @@ static void nrf_esb_ptx_event_handler(nrf_esb_evt_t const * p_event)
             nrf_gpio_pin_set(DBG_SIG_RETX);
               
 #endif	    
-            (void) nrf_esb_set_retransmit_count(m_jetstr_cfg_params.jetstr_retran_cnt_chan_sw);										
-            (void) nrf_esb_set_rf_channel(rf_channel_tab[channel_cnt]);
-            (void) nrf_esb_start_tx();
+            (void) esb_set_retransmit_count(m_jetstr_cfg_params.jetstr_retran_cnt_chan_sw);										
+            (void) esb_set_rf_channel(rf_channel_tab[channel_cnt]);
+            (void) esb_start_tx();
 							
 #ifdef DBG_SIG_ENABLE								
              nrf_gpio_pin_clear(DBG_SIG_RETX);
@@ -133,8 +133,8 @@ static void nrf_esb_ptx_event_handler(nrf_esb_evt_t const * p_event)
 #endif
 							
               //Discard transmission 
-              (void) nrf_esb_set_retransmit_count(m_jetstr_cfg_params.jetstr_retran_cnt_out_of_sync);								
-              (void) nrf_esb_flush_tx();
+              (void) esb_set_retransmit_count(m_jetstr_cfg_params.jetstr_retran_cnt_out_of_sync);								
+              (void) esb_flush_tx();
 			
 						 //channel_attempts = 0;  //JS Modify: 1/7/2022
         // nrf_gpio_pin_clear(BSP_LED_1);
@@ -145,7 +145,7 @@ static void nrf_esb_ptx_event_handler(nrf_esb_evt_t const * p_event)
            }							
             break;  
              
-        case NRF_ESB_EVENT_RX_RECEIVED:
+        case ESB_EVENT_RX_RECEIVED:
             evt.type = jetstr_evt_rx_received;				 
             break;					
     }
@@ -156,24 +156,24 @@ static void nrf_esb_ptx_event_handler(nrf_esb_evt_t const * p_event)
 volatile  static uint16_t jetstr_tx_period;
 volatile  static uint16_t jetstr_modify_rx_period;	
 
-static void nrf_esb_prx_event_handler(nrf_esb_evt_t const * p_event)
+static void esb_prx_event_handler(struct esb_evt const * p_event)
 {
    uint8_t retx_num;
 
-   nrf_esb_payload_t rx_buf;
-   jetstr_evt_t evt;
+   struct esb_payload rx_buf;
+   struct jetstr_evt evt;
 	
     evt.type = jetstr_evt_none;
 	 	
     switch (p_event->evt_id)
     {
-        case NRF_ESB_EVENT_TX_SUCCESS:
+        case ESB_EVENT_TX_SUCCESS:
 					 
              break;
-        case NRF_ESB_EVENT_TX_FAILED:
+        case ESB_EVENT_TX_FAILED:
 					
              break;
-        case NRF_ESB_EVENT_RX_RECEIVED:
+        case ESB_EVENT_RX_RECEIVED:
 
              first_rnd_sw  = true;
              chan_sw_cnt = 0;      // JS Modify: 10/22/2018 <-- reset channel sw cnt
@@ -184,7 +184,7 @@ static void nrf_esb_prx_event_handler(nrf_esb_evt_t const * p_event)
 #endif				
              JETSTR_SYS_TIMER->TASKS_STOP =1;
              JETSTR_SYS_TIMER->TASKS_CLEAR =1;         //clear timer 
-             nrf_esb_read_rx_payload(&rx_buf);			
+             esb_read_rx_payload(&rx_buf);			
             
 							jetstr_modify_rx_period = (m_jetstr_cfg_params.jetstr_rx_period - m_jetstr_cfg_params.jetstr_rx_delay); 					 
             		
@@ -227,17 +227,17 @@ static int jetstr_esb_init(enum esb_mode mode)
 		
     channel_cnt =0;
 	
-    struct esb_config	config			= NRF_ESB_DEFAULT_CONFIG;
-    config.protocol	                    = NRF_ESB_PROTOCOL_ESB_DPL;
+    struct esb_config	config			= ESB_DEFAULT_CONFIG;
+    config.protocol	                    = ESB_PROTOCOL_ESB_DPL;
 		
 #ifdef NRF52840_XXAA		
-    config.tx_output_power				= NRF_ESB_TX_POWER_8DBM;  
+    config.tx_output_power				= ESB_TX_POWER_8DBM;  
 #else		
 
-	config.tx_output_power				= NRF_ESB_TX_POWER_4DBM; 
+	config.tx_output_power				= ESB_TX_POWER_4DBM; 
 #endif	
 	
-//	config.tx_output_power              = NRF_ESB_TX_POWER_NEG20DBM;   //<-- for testing only	
+//	config.tx_output_power              = ESB_TX_POWER_NEG20DBM;   //<-- for testing only	
 		
 	config.mode                     		= mode;
 	if (mode == ESB_MODE_PTX)	
@@ -273,7 +273,7 @@ static int jetstr_esb_init(enum esb_mode mode)
 			return err;
 		}
 	
-	if (mode == NRF_ESB_MODE_PTX)
+	if (mode == ESB_MODE_PTX)
 	{	
 #ifdef DBG_SIG_ENABLE	 	
      nrf_gpio_cfg_output(DBG_SIG_POLL_EXP);
@@ -283,7 +283,7 @@ static int jetstr_esb_init(enum esb_mode mode)
      nrf_gpio_cfg_output(DBG_SIG_TX_FAIL);
 #endif	
 	}
-   else if (mode == NRF_ESB_MODE_PRX)	
+   else if (mode == ESB_MODE_PRX)	
    {
 		 
      NVIC_ClearPendingIRQ(JETSTR_IRQn);
@@ -342,7 +342,7 @@ void jetstr_init(const jetstr_cfg_t *  jetstr_cfg, const jetstr_cfg_params_t * j
 
 void jetstr_rx_start(uint16_t rx_period)
 {
-  uint32_t err_code;  
+  //uint32_t err_code;  
 #ifdef DBG_SIG_ENABLE		
 	nrf_gpio_pin_set(dbg_sig_rf_channel[0]);
 #endif	
@@ -351,7 +351,7 @@ void jetstr_rx_start(uint16_t rx_period)
 	
   //nrf_esb_write_payload(&sys_addr_buf);
 	
-  err_code = nrf_esb_start_rx();
+   esb_start_rx();
 	
 // Configure the system timer with a 1 MHz base frequency
   JETSTR_SYS_TIMER->PRESCALER = 4;
@@ -361,8 +361,7 @@ void jetstr_rx_start(uint16_t rx_period)
   JETSTR_SYS_TIMER->TASKS_CLEAR =1;
   JETSTR_SYS_TIMER->TASKS_START =1;
   
-  APP_ERROR_CHECK(err_code);
-	
+
 
 	
 }	
@@ -378,7 +377,7 @@ void JETSTR_IRQHandler(void)
 	  nrf_gpio_pin_set(DBG_SIG_TIM_IRQ);
 #endif	
 	
-          nrf_esb_stop_rx();
+          esb_stop_rx();
 		 		  
 		 
 #ifdef DBG_SIG_ENABLE			 
@@ -412,8 +411,8 @@ void JETSTR_IRQHandler(void)
 		  nrf_gpio_pin_set( dbg_sig_rf_channel[jetstr_channel_cnt]);
 #endif
 		 
-		  nrf_esb_set_rf_channel(rf_channel_tab[jetstr_channel_cnt]);	 
-	    nrf_esb_start_rx();
+		  esb_set_rf_channel(rf_channel_tab[jetstr_channel_cnt]);	 
+	      esb_start_rx();
 		 
 
 #ifdef DBG_SIG_ENABLE	 

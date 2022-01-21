@@ -46,7 +46,7 @@
 #define     JETSTR_IRQn                        TIMER1_IRQn
 #define     JETSTR_IRQHandler                  TIMER1_IRQHandler 
 
-#define DBG_SIG_ENABLE	
+#define DBG_SIG_ENABLE					
 
 #define DBG_SIG_POLL_EXP                    3     //Debug signal for packet polling timer expire
 #define DBG_SIG_SEND_PKT                    4     //Debug signal for sending packet
@@ -57,6 +57,16 @@
 #define DBG_SIG_RF_CHANNEL_OUT             {3, 4, 28, 29, 30} //Debug signals which asserts when PRX stays on the corresponding channel no.
 #define DBG_SIG_RF_RCV                     27                 //Debug signal for packet received
 #define DBG_SIG_TIM_IRQ                    26                 //Debug signal for system timer interrupt
+
+
+typedef enum
+{
+	jetstr_evt_none =0,
+	jetstr_evt_tx_success, 
+	jetstr_evt_tx_failed,
+	jetstr_evt_rx_received
+	
+}jetstr_event_t;	
 
 
 struct jetstr_evt
@@ -70,7 +80,7 @@ struct jetstr_evt
 
 
 /** @brief Event handler prototype. */
-typedef void (*jetstr_evt_callback_t)(const struct jetstr_evt *event);
+typedef void (*jetstr_evt_callback_t)(struct jetstr_evt const *event);
 
 
 /**@brief JETSTR config parameters. */
@@ -98,19 +108,13 @@ typedef enum
 }jetstr_pkt_rate_t;	
 
 
-typedef enum
-{
-	jetstr_evt_none =0,
-	jetstr_evt_tx_success, 
-	jetstr_evt_tx_failed,
-	jetstr_evt_rx_received
-	
-}jetstr_event_t;	
+
+
 
 
 typedef struct
 {
-	nrf_esb_mode_t			mode;
+	enum esb_mode				mode;
 	jetstr_evt_callback_t	event_callback;
 	
 }jetstr_cfg_t;	

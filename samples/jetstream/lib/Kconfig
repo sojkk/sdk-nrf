@@ -84,4 +84,3 @@ endchoice
 
 endmenu
 
-endif # NRF_ENHANCED_SHOCKBURST
