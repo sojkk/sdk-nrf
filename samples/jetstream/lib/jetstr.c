@@ -53,7 +53,6 @@
 #include <hal/nrf_gpio.h>
 
 
-static const struct device *dbg_port;
 
 static uint8_t pipe0_addr[] = SYSTEM_ADDRESS;
 
