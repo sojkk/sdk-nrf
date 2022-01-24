@@ -38,6 +38,9 @@
  * 
  */
 
+ 
+#define PKT_SIZE		128
+
 
 // Define pipe
 #define NRFR_DATA_PIPE   0

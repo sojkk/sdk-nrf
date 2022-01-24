@@ -52,7 +52,7 @@
 #include <zephyr/types.h>
 #include <hal/nrf_gpio.h>
 
-
+LOG_MODULE_REGISTER(jetstr, CONFIG_APP_LOG_LEVEL);
 
 static uint8_t pipe0_addr[] = SYSTEM_ADDRESS;
 
@@ -86,6 +86,8 @@ static void esb_ptx_event_handler(struct esb_evt const * p_event)
     struct jetstr_evt evt;
 	 
     evt.type = jetstr_evt_none;
+	 
+	LOG_DBG("esb_ptx_event_handler"); 
 	 
     switch (p_event->evt_id)
     {
@@ -245,6 +247,7 @@ static int jetstr_esb_init(enum esb_mode mode)
 	config.event_handler            = esb_ptx_event_handler;
 	config.selective_auto_ack       = false;
 	config.retransmit_count         = m_jetstr_cfg_params.jetstr_retran_cnt_out_of_sync;
+	LOG_DBG("jetstr_esb_init: mode = ESB_MODE_PTX"); 
 	}	
 	else if (mode == ESB_MODE_PRX)
 	{	

@@ -7,7 +7,6 @@
 #include <irq.h>
 #include <sys/byteorder.h>
 #include <nrf.h>
-#include <fast_esb.h>
 #ifdef DPPI_PRESENT
 #include <nrfx_dppi.h>
 #else
@@ -17,6 +16,8 @@
 #include <stddef.h>
 #include <string.h>
 #include <nrf_erratas.h>
+
+#include "esb_k.h"
 
 /* Constants */
 

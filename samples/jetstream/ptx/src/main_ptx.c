@@ -16,7 +16,7 @@
 #include "esb_k.h"
 #include "jetstr.h"
 
-LOG_MODULE_REGISTER(esb_ptx, CONFIG_APP_LOG_LEVEL);
+LOG_MODULE_REGISTER(main_ptx, CONFIG_APP_LOG_LEVEL);
 
 
 /*****************************************************************************/
@@ -55,7 +55,6 @@ uint8_t data_packet[] = {	1,  0,  3,  4,  5,  6,  7,  8,
 
 static uint8_t s_channel_tab[] = JETSTR_CHANNEL_TAB;
 
-static bool ready = true;
 
 static const uint8_t  led_pins[] = {DT_GPIO_PIN(DT_ALIAS(led0), gpios),
                                     DT_GPIO_PIN(DT_ALIAS(led1), gpios),
@@ -67,12 +66,14 @@ static const struct device *led_port;
 
 
 
-int clocks_start(void)
+void clocks_start(void)
 {	
     NRF_CLOCK->EVENTS_HFCLKSTARTED = 0;
     NRF_CLOCK->TASKS_HFCLKSTART = 1;
 
-    while (NRF_CLOCK->EVENTS_HFCLKSTARTED == 0);
+    while (NRF_CLOCK->EVENTS_HFCLKSTARTED == 0)
+		;
+	
 }
 
 
@@ -103,8 +104,9 @@ static int leds_init(void)
 }
 
 
-static void pkt_tx_handler(void * p_event_data, uint16_t event_size)
+static void pkt_tx_handler(struct k_work *item)
 {
+	LOG_DBG("pkt_tx_handler");
 
 	if  (esb_write_payload(&tx_payload) == 0) 
 	{
@@ -132,15 +134,13 @@ static void pkt_tx_handler(void * p_event_data, uint16_t event_size)
 
 void jetstr_event_handler(struct jetstr_evt const * p_event_data)
 {  
-	//uint16_t success_rate;
 	
-	ret_code_t err_code;
-	
-	jetstr_evt_t * evt;
+	struct jetstr_evt * evt;
 	
 	
-	evt = (jetstr_evt_t *) p_event_data;
+	evt = (struct jetstr_evt *) p_event_data;
 	
+//	LOG_DBG("jetstr event handler ");
 	
 	switch (evt->type)
 	{
@@ -172,9 +172,7 @@ void jetstr_event_handler(struct jetstr_evt const * p_event_data)
 
 
 void main(void)
-{
-	int err;
-	
+{	
 	jetstr_cfg_t jetstr_config;
 	
 	jetstr_cfg_params_t jetstr_cfg_params;
@@ -189,18 +187,13 @@ void main(void)
 	jetstr_cfg_params.jetstr_retran_cnt_chan_sw		= JETSTR_RETRAN_CNT_CHAN_SW;
 	
 
-	LOG_INF("Enhanced ShockBurst ptx sample");
-
-	err = clocks_start();
-	if (err) {
-		return;
-	}
+	clocks_start();
 
 	leds_init();
 
 	k_work_init(&pkt_tx_work, pkt_tx_handler);
 	
-	jetstr_config.mode            = NRF_ESB_MODE_PTX;
+	jetstr_config.mode            = ESB_MODE_PTX;
 	jetstr_config.event_callback  = jetstr_event_handler;
 	jetstr_init(&jetstr_config, &jetstr_cfg_params);
 	
@@ -210,6 +203,8 @@ void main(void)
 	
 	k_work_submit(&pkt_tx_work);
 	
+	LOG_INF("Enhanced ShockBurst ptx sample");
+
 	
 	while (1) {
 
