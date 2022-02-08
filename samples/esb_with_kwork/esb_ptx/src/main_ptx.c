@@ -177,7 +177,7 @@ uint32_t radio_init( void )
     config.event_handler            = radio_event_handler;
     config.mode                     = ESB_MODE_PTX;
     config.selective_auto_ack       = false;
-	config.retransmit_delay         = 250;
+	config.retransmit_delay         = 90;
 	config.payload_length			= 64;
 
     err = esb_init(&config);

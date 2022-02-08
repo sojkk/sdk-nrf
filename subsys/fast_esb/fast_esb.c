@@ -23,7 +23,7 @@
 /* 2 Mb RX wait for acknowledgment time-out value.
  * Smallest reliable value: 43 //160.
  */
-#define RX_ACK_TIMEOUT_US_2MBPS 48 //160
+#define RX_ACK_TIMEOUT_US_2MBPS  45//48 //160
 /* 1 Mb RX wait for acknowledgment time-out value. */
 #define RX_ACK_TIMEOUT_US_1MBPS 73 //300
 /* 250 Kb RX wait for acknowledgment time-out value. */
