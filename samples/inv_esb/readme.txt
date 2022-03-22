@@ -4,12 +4,18 @@ ESB DEMO
 
 esb_demo_03/ esb_demo_03R
 
-inv-esb-fixFH with esb fast ramp up
+inv-esb-fixFH with esb fast ramp up, 1Mbps PHY
 
 --------------------------------------------------------------------------------------------------------------
 
 esb_demo_04
 
-inv-esb-aFH with esb fast ramp up
+inv-esb-aFH with esb fast ramp up, 1Mbps PHY
+
+--------------------------------------------------------------------------------------------------------------
+
+esb_demo_08
+
+inv-esb-fixFH with esb fast ramp up, 2Mbps PHY,one re-transmission
 
 --------------------------------------------------------------------------------------------------------------
