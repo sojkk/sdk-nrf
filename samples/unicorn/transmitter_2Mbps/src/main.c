@@ -59,11 +59,22 @@
 #include <zephyr.h>
 #include <zephyr/types.h>
 
-
 #include "radio.h"
+
+LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
+
+
 
 #define SCHED_MAX_EVENT_DATA_SIZE       2                                          /**< Maximum size of scheduler events. */
 #define SCHED_QUEUE_SIZE                10                                         /**< Maximum number of events in the scheduler queue. */
+
+static const uint8_t  led_pins[] = {DT_GPIO_PIN(DT_ALIAS(led0), gpios),
+                                    DT_GPIO_PIN(DT_ALIAS(led1), gpios),
+                                    DT_GPIO_PIN(DT_ALIAS(led2), gpios),
+                                    DT_GPIO_PIN(DT_ALIAS(led3), gpios)};
+
+
+static const struct device *led_port;
 
 static radio_modes_t mode = MODE_2_MBIT;
 static radio_power_t tx_power = RADIO_TX_POWER_4DBM;
@@ -76,24 +87,36 @@ static uint8_t                 packet[]   = { 1,  2,  3,  4,  5,  6,  7,  8,
                                              17, 18, 19, 20, 21, 22, 23, 24,
                                              25, 26, 27, 28, 29, 30, 31, 32} ;                    /**< Packet to transmit. */
 
+																		 
 
-/**@brief Function for the Event Scheduler initialization.
- */
-/*																						 
-static void scheduler_init(void)
+int gpio_init( void )
 {
-    APP_SCHED_INIT(SCHED_MAX_EVENT_DATA_SIZE, SCHED_QUEUE_SIZE);
-}
-*/
-																						 
-																						 
 
-void gpio_init( void )
-{
-    nrf_gpio_range_cfg_output(8, 15);
-    bsp_board_init(BSP_INIT_LEDS);
+	int err;
+	
+	led_port = device_get_binding(DT_LABEL(DT_NODELABEL(gpio0)));
+	if (!led_port) {
+		LOG_ERR("Could not bind to LED port %s",
+			DT_LABEL(DT_NODELABEL(gpio0)));
+		return -EIO;
+	}
+	
+	
+	for (size_t i = 0; i < ARRAY_SIZE(led_pins); i++) {
+			err = gpio_pin_configure(led_port, led_pins[i],
+					GPIO_OUTPUT);
+			if (err) {
+					LOG_ERR("Unable to configure LED%u, err %d", i, err);
+					led_port = NULL;
+					return err;
+				}
+                      		
+                        gpio_pin_set(led_port, led_pins[i], 1); 
+	}
 
     nrf_gpio_range_cfg_output(28,31);
+	
+	return 0;
 
 }
 
@@ -110,11 +133,12 @@ void radio_evt_cb(radio_evt_t const * p_event)
 				if (cnt == 1)
 				{
 					// Toggle one of the LEDs.
-						nrf_gpio_pin_write(LED_1, !(packet[0]%8>0 && packet[0]%8<=4));
-						nrf_gpio_pin_write(LED_2, !(packet[0]%8>1 && packet[0]%8<=5));
-						nrf_gpio_pin_write(LED_3, !(packet[0]%8>2 && packet[0]%8<=6));
-						nrf_gpio_pin_write(LED_4, !(packet[0]%8>3));
-						packet[0]++;
+					gpio_pin_set(led_port, led_pins[0], !(packet[0]%8>0 && packet[0]%8<=4));
+					gpio_pin_set(led_port, led_pins[1], !(packet[0]%8>1 && packet[0]%8<=5));
+					gpio_pin_set(led_port, led_pins[2], !(packet[0]%8>2 && packet[0]%8<=6));
+					gpio_pin_set(led_port, led_pins[3], !(packet[0]%8>3));
+					
+					packet[0]++;
 				}
 			}
 }
@@ -132,9 +156,8 @@ void power_manage(void)
  * @brief Function for application main entry.
  * @return 0. int return type required by ANSI/ISO standard.
  */
-int main(void)
+void main(void)
 {
-    uint32_t err_code = NRF_SUCCESS;
 
     gpio_init();
 
@@ -149,12 +172,8 @@ int main(void)
     radio_setup(radio_init);
 
    
-    NRF_LOG_INFO("Radio transmitter example started.");
+    LOG_INF("Radio transmitter example started.");
 
-    while (true)
-    {
-  
-    }
 }
 
 

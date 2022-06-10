@@ -1,14 +1,12 @@
 #include <zephyr.h>
 #include <zephyr/types.h>
+#include <irq.h>
 #include <nrf.h>
 #include <string.h>
 #include <drivers/clock_control.h>
 #include <drivers/clock_control/nrf_clock_control.h>
 #include <hal/nrf_gpio.h>
-#include <irq.h>
 #include <logging/log.h>
-#include "boards.h"
-#include "nrf_gpio.h"
 #include "radio.h"
 #include "radio_config.h"
 
@@ -185,7 +183,68 @@ static void timer_rx_event_handler(void)
 
 }
 
+void RADIO_IRQHandler(void)
+{
 
+    if (NRF_RADIO->EVENTS_ADDRESS)
+    {
+        NRF_RADIO->EVENTS_ADDRESS = 0;      
+    }
+
+    if (NRF_RADIO->EVENTS_DISABLED && (NRF_RADIO->INTENSET & RADIO_INTENSET_DISABLED_Msk))
+    {
+        NRF_RADIO->EVENTS_DISABLED = 0;
+
+        if(NRF_RADIO->CRCSTATUS & (RADIO_CRCSTATUS_CRCSTATUS_CRCOk << RADIO_CRCSTATUS_CRCSTATUS_Pos))
+        {
+           
+            rssi = -NRF_RADIO->RSSISAMPLE;
+            packet_received = true;
+
+           if(!m_is_transmitter)
+           {
+
+              nrf_gpio_pin_set(PIN_DATA_RECEIVED);
+
+              loss_cnt = 0;             
+             
+
+              if(!TUNE_MODE)
+              {
+                // Change to RF_OPERATE
+                if (rx_state == RF_SEARCH )
+                {
+										rx_state = RF_OPERATE;
+								}
+
+                //Reload  RF_RX_OPERATE_CNT to radio timer
+                RADIO_TIMER->TASKS_STOP =1 ;
+                RADIO_TIMER->TASKS_CLEAR =1 ;
+                RADIO_TIMER->CC[0] = RF_RX_OPERATE_CNT;
+            
+                RADIO_TIMER->TASKS_START =1;
+              }
+
+              nrf_gpio_pin_clear(PIN_DATA_RECEIVED);
+							
+							m_radio_event.evt_id = RADIO_EVENT_POLL_RCV;
+							m_radio_event.chan_cnt =  rf_chan_idx;
+							m_event_callback(&m_radio_event);
+      
+           }
+					 
+					 
+        }
+        else
+        {
+           packet_received = false;
+        }
+        
+ 
+    }
+
+
+}
 
 
 
@@ -343,64 +402,4 @@ uint8_t radio_get_packet(void)
 }
 
 
-void RADIO_IRQHandler(void)
-{
 
-    if (NRF_RADIO->EVENTS_ADDRESS)
-    {
-        NRF_RADIO->EVENTS_ADDRESS = 0;      
-    }
-
-    if (NRF_RADIO->EVENTS_DISABLED && (NRF_RADIO->INTENSET & RADIO_INTENSET_DISABLED_Msk))
-    {
-        NRF_RADIO->EVENTS_DISABLED = 0;
-
-        if(NRF_RADIO->CRCSTATUS & (RADIO_CRCSTATUS_CRCSTATUS_CRCOk << RADIO_CRCSTATUS_CRCSTATUS_Pos))
-        {
-           
-            rssi = -NRF_RADIO->RSSISAMPLE;
-            packet_received = true;
-
-           if(!m_is_transmitter)
-           {
-
-              nrf_gpio_pin_set(PIN_DATA_RECEIVED);
-
-              loss_cnt = 0;             
-             
-
-              if(!TUNE_MODE)
-              {
-                // Change to RF_OPERATE
-                if (rx_state == RF_SEARCH )
-                {
-										rx_state = RF_OPERATE;
-								}
-
-                //Reload  RF_RX_OPERATE_CNT to radio timer
-                RADIO_TIMER->TASKS_STOP =1 ;
-                RADIO_TIMER->TASKS_CLEAR =1 ;
-                RADIO_TIMER->CC[0] = RF_RX_OPERATE_CNT;
-            
-                RADIO_TIMER->TASKS_START =1;
-              }
-
-              nrf_gpio_pin_clear(PIN_DATA_RECEIVED);
-							
-							m_radio_event.evt_id = RADIO_EVENT_POLL_RCV;
-							m_radio_event.chan_cnt =  rf_chan_idx;
-							m_event_callback(&m_radio_event);
-      
-           }
-					 
-					 
-        }
-        else
-        {
-           packet_received = false;
-        }
-        
- 
-    }
-
-}
