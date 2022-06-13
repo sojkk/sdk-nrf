@@ -131,55 +131,54 @@ void RADIO_TIMER_IRQHandler(void)
 
 static void timer_tx_event_handler(void)
 {
-				//Hop frequnecy
-        rf_chan_idx =(rf_chan_idx+1)% (RF_CHAN_TAB_SIZE);  
-        NRF_RADIO->FREQUENCY    = RF_CHANNEL_TAB[rf_chan_idx];
-				//Application callback
-				m_radio_event.evt_id = RADIO_EVENT_POLL_EXP;
-				m_radio_event.chan_cnt = rf_chan_idx;				
-				m_event_callback(&m_radio_event);	
-				//Copy m_tx_buf to dma_buf
-				dma_buf[0]= m_tx_length;
-				memcpy(&dma_buf[1], m_tx_buf, m_tx_length);
-				//Start TX
-				NRF_RADIO->TASKS_TXEN = 1;
+	//Hop frequnecy
+	rf_chan_idx =(rf_chan_idx+1)% (RF_CHAN_TAB_SIZE);  
+	NRF_RADIO->FREQUENCY    = RF_CHANNEL_TAB[rf_chan_idx];
+	//Application callback
+	m_radio_event.evt_id = RADIO_EVENT_POLL_EXP;
+	m_radio_event.chan_cnt = rf_chan_idx;				
+	m_event_callback(&m_radio_event);	
+	//Copy m_tx_buf to dma_buf
+	dma_buf[0]= m_tx_length;
+	memcpy(&dma_buf[1], m_tx_buf, m_tx_length);
+	//Start TX
+	NRF_RADIO->TASKS_TXEN = 1;
       
 }
 
 
 static void timer_rx_event_handler(void)
-{
-          
-            rf_chan_idx =(rf_chan_idx+1)% (RF_CHAN_TAB_SIZE);
-         
-            NRF_RADIO->FREQUENCY    = RF_CHANNEL_TAB[rf_chan_idx];
-           
-            NRF_RADIO->TASKS_RXEN  = 1;
-        
-           if (rx_state== RF_OPERATE)
-           {
-       
-              if ( (loss_cnt ==  RF_CHAN_TAB_SIZE ) )
-              {
-
-                rx_state = RF_SEARCH;
-               //Reload  RF_RX_OPERATE_CNT to radio timer
-               RADIO_TIMER->TASKS_STOP=1;
-               RADIO_TIMER->TASKS_CLEAR =1;
-               RADIO_TIMER->CC[0] = RF_RX_SEARCH_PERIOD;
-               RADIO_TIMER->TASKS_START =1;
+{         
+	rf_chan_idx =(rf_chan_idx+1)% (RF_CHAN_TAB_SIZE);
  
-              }
-              else
-							{
-               RADIO_TIMER->TASKS_STOP=1 ;
-               RADIO_TIMER->TASKS_CLEAR=1;
-               RADIO_TIMER->CC[0] = RF_RX_OPERATE_PERIOD;
-               RADIO_TIMER->TASKS_START =1;
-                loss_cnt++;
-                
-              }  
-           }
+	NRF_RADIO->FREQUENCY    = RF_CHANNEL_TAB[rf_chan_idx];
+   
+	NRF_RADIO->TASKS_RXEN  = 1;
+
+   if (rx_state== RF_OPERATE)
+   {
+
+	  if ( (loss_cnt ==  RF_CHAN_TAB_SIZE ) )
+	  {
+
+		rx_state = RF_SEARCH;
+	   //Reload  RF_RX_OPERATE_CNT to radio timer
+	   RADIO_TIMER->TASKS_STOP=1;
+	   RADIO_TIMER->TASKS_CLEAR =1;
+	   RADIO_TIMER->CC[0] = RF_RX_SEARCH_PERIOD;
+	   RADIO_TIMER->TASKS_START =1;
+
+	  }
+	  else
+					{
+	   RADIO_TIMER->TASKS_STOP=1 ;
+	   RADIO_TIMER->TASKS_CLEAR=1;
+	   RADIO_TIMER->CC[0] = RF_RX_OPERATE_PERIOD;
+	   RADIO_TIMER->TASKS_START =1;
+		loss_cnt++;
+		
+	  }  
+   }
 
 }
 
