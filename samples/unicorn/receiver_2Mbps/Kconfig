@@ -6,10 +6,10 @@
 
 source "Kconfig.zephyr"
 
-menu "Enhanced ShockBurst: Transmitter"
+menu "Unicorn: Receiver"
 
 config APP_LOG_LEVEL
-	int "Log level for unicorntransmitter sample"
+	int "Log level for unicorn receiver sample"
 	default 4
 
 endmenu

@@ -62,16 +62,16 @@
 LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
 
 
-static radio_modes_t           mode = MODE_2_MBIT;
-static radio_power_t  tx_power = RADIO_TX_POWER_0DBM;
-static uint8_t             data_packet[32];              /**< Packet to receive */
+static radio_modes_t	mode = MODE_2_MBIT;
+static radio_power_t	tx_power = RADIO_TX_POWER_0DBM;
+static uint8_t			data_packet[32];              /**< Packet to receive */
 
-static radio_init_t       radio_init;	
+static radio_init_t		radio_init;	
 
-static const uint8_t  led_pins[] = {DT_GPIO_PIN(DT_ALIAS(led0), gpios),
-                                    DT_GPIO_PIN(DT_ALIAS(led1), gpios),
-                                    DT_GPIO_PIN(DT_ALIAS(led2), gpios),
-                                    DT_GPIO_PIN(DT_ALIAS(led3), gpios)};
+static const uint8_t	led_pins[] = {DT_GPIO_PIN(DT_ALIAS(led0), gpios),
+                                      DT_GPIO_PIN(DT_ALIAS(led1), gpios),
+                                      DT_GPIO_PIN(DT_ALIAS(led2), gpios),
+                                      DT_GPIO_PIN(DT_ALIAS(led3), gpios)};
 
 
 static const struct device *led_port;
@@ -79,17 +79,17 @@ static const struct device *led_port;
 void radio_evt_cb(radio_evt_t const * p_event)
 {
 	
-		if(p_event->evt_id ==RADIO_EVENT_POLL_RCV )
-		{
-			radio_get_packet();
+	if(p_event->evt_id ==RADIO_EVENT_POLL_RCV )
+	{
+		radio_get_packet();
 
-			// Set LEDs identical to the ones on the PTX.
-			gpio_pin_set(led_port, led_pins[0], !(data_packet[0]%8>0 && data_packet[0]%8<=4));
-			gpio_pin_set(led_port, led_pins[1], !(data_packet[0]%8>1 && data_packet[0]%8<=5));
-			gpio_pin_set(led_port, led_pins[2], !(data_packet[0]%8>2 && data_packet[0]%8<=6));
-			gpio_pin_set(led_port, led_pins[3], !(data_packet[0]%8>3));
-		
-		}
+		// Set LEDs identical to the ones on the PTX.
+		gpio_pin_set(led_port, led_pins[0], !(data_packet[0]%8>0 && data_packet[0]%8<=4));
+		gpio_pin_set(led_port, led_pins[1], !(data_packet[0]%8>1 && data_packet[0]%8<=5));
+		gpio_pin_set(led_port, led_pins[2], !(data_packet[0]%8>2 && data_packet[0]%8<=6));
+		gpio_pin_set(led_port, led_pins[3], !(data_packet[0]%8>3));
+	
+	}
 }
 
 int gpio_init( void )
@@ -121,14 +121,6 @@ int gpio_init( void )
 	return 0;
 }
 
-/*
-void power_manage(void)
-{
-    __WFE();
-    __SEV();
-    __WFE();
-}
-*/
 /**
  * @brief Function for application main entry.
  * @return 0. int return type required by ANSI/ISO standard.
@@ -147,7 +139,7 @@ void main(void)
     radio_setup(radio_init);
     radio_receive_packet();
     
-	 LOG_INF("Radio receiver example started.");
+	LOG_INF("Radio receiver example started.");
 
 }
 

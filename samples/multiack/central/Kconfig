@@ -6,10 +6,10 @@
 
 source "Kconfig.zephyr"
 
-menu "Unicorn: Transmitter"
+menu "Multiack : Central"
 
 config APP_LOG_LEVEL
-	int "Log level for unicorn transmitter sample"
+	int "Log level for multiack central sample"
 	default 4
 
 endmenu
