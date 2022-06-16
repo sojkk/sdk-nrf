@@ -31,6 +31,7 @@ static const struct gpio_dt_spec dsp_sel = GPIO_DT_SPEC_GET(DT_NODELABEL(dsp_sel
  */
 static int cs47l63_comm_reg_conf_write(const uint32_t config[][2], uint32_t num_of_regs)
 {
+#if 0
 	int ret;
 	uint32_t reg;
 	uint32_t value;
@@ -50,7 +51,7 @@ static int cs47l63_comm_reg_conf_write(const uint32_t config[][2], uint32_t num_
 			}
 		}
 	}
-
+#endif	
 	return 0;
 }
 
@@ -77,6 +78,7 @@ static int hw_codec_on_board_set(void)
 
 int hw_codec_volume_set(uint16_t set_val)
 {
+#if 0
 	int ret;
 	uint16_t volume_reg_val;
 
@@ -93,11 +95,13 @@ int hw_codec_volume_set(uint16_t set_val)
 	if (ret) {
 		return ret;
 	}
+#endif
 	return 0;
 }
 
 int hw_codec_volume_adjust(int8_t adjustment)
 {
+#if 0
 	int ret;
 	static uint8_t prev_volume_reg_val = OUT_VOLUME_DEFAULT;
 
@@ -150,35 +154,39 @@ int hw_codec_volume_adjust(int8_t adjustment)
 	LOG_INF("Volume: %ddB", volume_in_db);
 #endif /* (CONFIG_LOG_HW_CODEC_LEVEL >= LOG_LEVEL_INF) */
 
+#endif  //if 0
 	return 0;
 }
 
 int hw_codec_volume_decrease(void)
 {
+#if 0	
 	int ret;
 
 	ret = hw_codec_volume_adjust(-VOLUME_ADJUST_STEP_DB);
 	if (ret) {
 		return ret;
 	}
-
+#endif
 	return 0;
 }
 
 int hw_codec_volume_increase(void)
 {
+#if 0	
 	int ret;
 
 	ret = hw_codec_volume_adjust(VOLUME_ADJUST_STEP_DB);
 	if (ret) {
 		return ret;
 	}
-
+#endif
 	return 0;
 }
 
 int hw_codec_volume_mute(void)
 {
+#if 0	
 	int ret;
 	uint16_t volume_reg_val;
 
@@ -195,12 +203,13 @@ int hw_codec_volume_mute(void)
 	if (ret) {
 		return ret;
 	}
-
+#endif
 	return 0;
 }
 
 int hw_codec_volume_unmute(void)
 {
+#if 0	
 	int ret;
 	uint16_t volume_reg_val;
 
@@ -217,12 +226,13 @@ int hw_codec_volume_unmute(void)
 	if (ret) {
 		return ret;
 	}
-
+#endif
 	return 0;
 }
 
 int hw_codec_default_conf_enable(void)
 {
+#if 0	
 	int ret;
 
 	ret = cs47l63_comm_reg_conf_write(clock_configuration, ARRAY_SIZE(clock_configuration));
@@ -270,12 +280,13 @@ int hw_codec_default_conf_enable(void)
 	if (ret) {
 		return ret;
 	}
-
+#endif
 	return 0;
 }
 
 int hw_codec_soft_reset(void)
 {
+#if 0
 	int ret;
 
 	ret = cs47l63_comm_reg_conf_write(output_disable, ARRAY_SIZE(output_disable));
@@ -287,12 +298,13 @@ int hw_codec_soft_reset(void)
 	if (ret) {
 		return ret;
 	}
-
+#endif
 	return 0;
 }
 
 int hw_codec_init(void)
 {
+#if 0
 	int ret;
 
 	/* Set to internal/on board codec */
@@ -312,6 +324,6 @@ int hw_codec_init(void)
 		return ret;
 	}
 	cs47l63_driver.state = CS47L63_STATE_STANDBY;
-
+#endif
 	return 0;
 }

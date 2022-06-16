@@ -63,7 +63,7 @@ static int leds_set(void)
 	int ret;
 
 	/* Blink LED 3 to indicate that APP core is running */
-	ret = led_blink(LED_APP_3_GREEN);
+	ret = led_blink(LED_APP_1_BLUE);
 	if (ret) {
 		return ret;
 	}
@@ -155,7 +155,7 @@ void main(void)
 
 	ret = fw_info_app_print();
 	ERR_CHK(ret);
-
+#if 0
 	ret = board_version_valid_check();
 	ERR_CHK(ret);
 
@@ -179,7 +179,7 @@ void main(void)
 
 	ret = power_module_init();
 	ERR_CHK(ret);
-
+#endif
 	ret = audio_sync_timer_init();
 	ERR_CHK(ret);
 
