@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Nordic Semiconductor ASA
+ * Copyright (c) 2019 Nordic Semiconductor ASA
  *
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
@@ -18,8 +18,8 @@ const struct {} buttons_def_include_once;
 static const struct gpio_pin col[] = {};
 
 static const struct gpio_pin row[] = {
-	{ .port = 0, .pin = DT_GPIO_PIN(DT_ALIAS(sw0), gpios) },
-	{ .port = 0, .pin = DT_GPIO_PIN(DT_ALIAS(sw1), gpios) },
-	{ .port = 0, .pin = DT_GPIO_PIN(DT_ALIAS(sw2), gpios) },
-	{ .port = 0, .pin = DT_GPIO_PIN(DT_ALIAS(sw3), gpios) },
+	{ .port = 0, .pin = DT_GPIO_PIN(DT_NODELABEL(button0), gpios) },
+	{ .port = 0, .pin = DT_GPIO_PIN(DT_NODELABEL(button1), gpios) },
+	{ .port = 0, .pin = DT_GPIO_PIN(DT_NODELABEL(button2), gpios) },
+	{ .port = 0, .pin = DT_GPIO_PIN(DT_NODELABEL(button3), gpios) },
 };

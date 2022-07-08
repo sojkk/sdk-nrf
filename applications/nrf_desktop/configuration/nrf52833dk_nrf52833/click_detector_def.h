@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Nordic Semiconductor ASA
+ * Copyright (c) 2019 Nordic Semiconductor ASA
  *
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
@@ -18,6 +18,6 @@ const struct {} click_detector_def_include_once;
 static const struct click_detector_config click_detector_config[] = {
 	{
 		.key_id = CONFIG_DESKTOP_BLE_PEER_CONTROL_BUTTON,
-		.consume_button_event = true,
+		.consume_button_event = false,
 	},
 };
