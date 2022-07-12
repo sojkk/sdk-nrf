@@ -157,6 +157,8 @@ int gpio_init( void )
 void main(void)
 {
    
+	NRF_POWER->DCDCEN =1;  // Enable DCDC
+   
     gpio_init();
 
 	
@@ -166,7 +168,7 @@ void main(void)
 	radio_init.tx_power			= tx_power;
 	radio_init.tx_buf			= tx_packet;
 	radio_init.rx_buf			= rx_packet;
-	radio_init.tx_length		= sizeof(tx_packet);
+	radio_init.tx_length		= PERIPH_PKT_SIZE;//sizeof(tx_packet);
 
     radio_setup(radio_init);
     radio_start_receive();

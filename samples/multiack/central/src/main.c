@@ -60,6 +60,7 @@
 #include <zephyr/types.h>
 
 #include "radio.h"
+#include "radio_config.h"
 
 LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
 
@@ -81,7 +82,7 @@ static uint8_t      	tx_packet[]   = { 1,  2,  3,  4,  5,  6,  7,  8,
                                           25, 26, 27, 28, 29, 30, 31, 32} ;                    /**< Packet to transmit. */
 
 
-static uint8_t			rx_packet[4][32];			
+static uint8_t			rx_packet[NUM_OF_PERIPHS][PERIPH_PKT_SIZE];			
 
 
 static radio_init_t     radio_init;																									 
