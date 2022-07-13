@@ -369,7 +369,7 @@ void radio_timer_irq_handler(void)
 ISR_DIRECT_DECLARE(RADIO_TIMER_IRQHandler)
 {
 	radio_timer_irq_handler();
-	return 1;
+	return 0;
 }
 
 
@@ -406,7 +406,7 @@ void  radio_irq_handler(void)
 ISR_DIRECT_DECLARE(RADIO_IRQHandler)
 {
 	radio_irq_handler();
-	return 1;
+	return 0;
 }
 
 

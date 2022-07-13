@@ -70,7 +70,7 @@ static const uint8_t  led_pins[] = {DT_GPIO_PIN(DT_ALIAS(led0), gpios),
 static const struct device *led_port;
 
 static radio_modes_t		mode = MODE_2_MBIT;
-static radio_power_t  		tx_power = RADIO_TX_POWER_0DBM;
+static radio_power_t  		tx_power = RADIO_TX_POWER_4DBM;
 static uint8_t				rx_packet[32];              /**< Packet to receive */
 
 #if (PERIPH_NUM == 1)

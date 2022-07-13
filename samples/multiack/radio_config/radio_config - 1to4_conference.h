@@ -1,3 +1,10 @@
+/********************************************
+ *
+ * Radio Config for 1 to 4 conference system 
+ *
+ *******************************************/
+
+
 #ifndef RADIO_CONFIG_H
 #define RADIO_CONFIG_H
 
@@ -26,7 +33,7 @@
 /********************************************************************************************/
 
 #define LATENCY                   80
-#define T2_ADJ                    246-LATENCY  //  for 32 bytes payload in fast mode
+#define T2_ADJ                    246-LATENCY  
 #define EVENT_US                  1300         // 1.3ms
 #define RF_CHAN_TAB_SIZE          15
 #define RF_RX_OPERATE_PERIOD      EVENT_US

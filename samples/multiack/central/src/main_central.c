@@ -131,7 +131,7 @@ void radio_evt_cb(radio_evt_t const * p_event)
 		{
 			// Toggle one of the LEDs.
 			gpio_pin_set(led_port, led_pins[0], !(rx_packet[0][0]%8>0 && rx_packet[0][0]%8<=4));
-			//gpio_pin_set(led_port, led_pins[1], !(rx_packet[1][0]%8>1 && rx_packet[1][0]%8<=5));
+			gpio_pin_set(led_port, led_pins[1], !(rx_packet[1][0]%8>1 && rx_packet[1][0]%8<=5));
 			//gpio_pin_set(led_port, led_pins[2], !(rx_packet[2][0]%8>2 && rx_packet[2][0]%8<=6));
 			//gpio_pin_set(led_port, led_pins[3], !(rx_packet[3][0]%8>3));
 			tx_packet[0]++;

@@ -1,6 +1,6 @@
 /**********************************
  *
- * Radio Config for 1 to 2 gaming 
+ * Radio Config for 1 to 1 gaming 
  *
  **********************************/
 
@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include "nrf.h"
 
-#define NUM_OF_PERIPHS	2
+#define NUM_OF_PERIPHS	1
 
 #define TUNE_MODE   false
 
@@ -33,7 +33,7 @@
 
 #define LATENCY                   70
 #define T2_ADJ                    246-LATENCY  
-#define EVENT_US                  650        // 650us
+#define EVENT_US                  500         // 500us
 #define RF_CHAN_TAB_SIZE          15
 #define RF_RX_OPERATE_PERIOD      EVENT_US
 #define RF_RX_SEARCH_PERIOD       RF_RX_OPERATE_PERIOD* (RF_CHAN_TAB_SIZE +1)
@@ -45,7 +45,7 @@
 #define PERIPH_TX_DELAY_PERIOD		140
 
 
-#define	PERIPH_PKT_SIZE						10
+#define	PERIPH_PKT_SIZE						16
 
 static const uint8_t  RF_CHANNEL_TAB[] =  {  6, 28, 52, 76, 24, \
                                             48, 72, 20, 44, 68, \
