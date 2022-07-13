@@ -340,7 +340,7 @@ uint8_t radio_get_poll_packet(void)
 /**
  * @brief Handler for radio timer events.
  */
-void RADIO_TIMER_IRQHandler(void)
+void radio_timer_irq_handler(void)
 {
    if (RADIO_TIMER->EVENTS_COMPARE[0] == 1)
    {
@@ -366,11 +366,18 @@ void RADIO_TIMER_IRQHandler(void)
 	}
 }
 
+ISR_DIRECT_DECLARE(RADIO_TIMER_IRQHandler)
+{
+	radio_timer_irq_handler();
+	return 1;
+}
+
+
 
 /**
  * @brief Handler for radio timer events.
  */
-void RADIO_IRQHandler(void)
+void  radio_irq_handler(void)
 {
 
     if (NRF_RADIO->EVENTS_END && (NRF_RADIO->INTENSET & RADIO_INTENSET_END_Msk))
@@ -395,6 +402,14 @@ void RADIO_IRQHandler(void)
 
 }
 
+
+ISR_DIRECT_DECLARE(RADIO_IRQHandler)
+{
+	radio_irq_handler();
+	return 1;
+}
+
+
 void radio_setup(radio_init_t init)
 {
 
@@ -411,7 +426,7 @@ void radio_setup(radio_init_t init)
 	
 	on_radio_disabled_interrupt = (m_is_central)? on_central_disabled:on_periph_disabled;
 
-    NRF_RADIO->MODECNF0     |= true;
+    NRF_RADIO->MODECNF0     |= 1;
     
     NRF_RADIO->POWER        = 1;
 	

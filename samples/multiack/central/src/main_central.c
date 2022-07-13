@@ -39,14 +39,16 @@
  */
 /** @file
 *
-* @defgroup nrf_dev_radio_rx_example_main main.c
+* @defgroup nrf_dev_button_radio_tx_example_main main.c
 * @{
-* @ingroup nrf_dev_radio_rx_example
-* @brief Radio Receiver example Application main file.
+* @ingroup nrf_dev_button_radio_tx_example
+*
+* @brief Radio Transceiver Example Application main file.
 *
 * This file contains the source code for a sample application using the NRF_RADIO peripheral.
 *
 */
+
 #include <drivers/clock_control.h>
 #include <drivers/clock_control/nrf_clock_control.h>
 #include <drivers/gpio.h>
@@ -58,6 +60,7 @@
 #include <zephyr/types.h>
 
 #include "radio.h"
+#include "radio_config.h"
 
 LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
 
@@ -68,58 +71,23 @@ static const uint8_t  led_pins[] = {DT_GPIO_PIN(DT_ALIAS(led0), gpios),
 
 static const struct device *led_port;
 
-static radio_modes_t           mode = MODE_2_MBIT;
-static radio_power_t  		tx_power = RADIO_TX_POWER_4DBM;
-static uint8_t            rx_packet[32];              /**< Packet to receive */
+static radio_modes_t mode = MODE_2_MBIT;
+static radio_power_t tx_power = RADIO_TX_POWER_4DBM;
 
-#if (PERIPH_NUM == 1)
-static uint8_t						tx_packet[] = { 0, 'b', 'c', 'd', 'e', 'f', 'g','h', \
-																				 'a', 'b', 'c', 'd', 'e', 'f', 'g','h', \
-													 							 'a', 'b', 'c', 'd', 'e', 'f', 'g','h', \
-																				 'a', 'b', 'c', 'd', 'e', 'f', 'g','h', };
-#elif (PERIPH_NUM == 2)
-static uint8_t						tx_packet[] = { 0, 'B', 'C', 'D', 'E', 'F', 'G','H', \
-																				 'A', 'B', 'C', 'D', 'E', 'F', 'G','H', \
-													 							 'A', 'B', 'C', 'D', 'E', 'F', 'G','H', \
-																				 'A', 'B', 'C', 'D', 'E', 'F', 'G','H', };																				 
-#else
-static uint8_t						tx_packet[] = { 0, '1', '2', '3', '4', '5', '6','7', \
-																				 'a', 'b', 'c', 'd', 'e', 'f', 'g','h', \
-													 							 '0', '1', '2', '3', '4', '5', '6','7', \
-																				 'a', 'b', 'c', 'd', 'e', 'f', 'g','h', };
-																				 
-#endif
 
-static radio_init_t       radio_init;																				 
-																				 
+//32 bytes packet
+static uint8_t      	tx_packet[]   = { 1,  2,  3,  4,  5,  6,  7,  8, 
+                                          9, 10, 11, 12, 13, 14, 15, 16,
+                                          17, 18, 19, 20, 21, 22, 23, 24,
+                                          25, 26, 27, 28, 29, 30, 31, 32} ;                    /**< Packet to transmit. */
 
-void radio_evt_cb(radio_evt_t const * p_event)
-{
 
-		if(p_event->evt_id == RADIO_EVENT_PERIPH_POLL_RCV)
-		{
-			radio_get_poll_packet();
+static uint8_t			rx_packet[NUM_OF_PERIPHS][PERIPH_PKT_SIZE];			
 
-			uint8_t cnt = p_event->chan_cnt;
 
-			cnt = cnt %4; 
+static radio_init_t     radio_init;																									 
+																					 
 
-			if (cnt == 1)
-			{
-				
-				 // Set LEDs identical to the ones on the PTX.
-				 gpio_pin_set(led_port, led_pins[0], !(rx_packet[0]%8>0 && rx_packet[0]%8<=4));
-				 gpio_pin_set(led_port, led_pins[1], !(rx_packet[0]%8>1 && rx_packet[0]%8<=5));
-				 gpio_pin_set(led_port, led_pins[2], !(rx_packet[0]%8>2 && rx_packet[0]%8<=6));
-				 gpio_pin_set(led_port, led_pins[3], !(rx_packet[0]%8>3));
-			
-				//Update TX packet
-				tx_packet[0]++;
-
-			}
-		
-	}
-}	
 
 int gpio_init( void )
 {
@@ -132,6 +100,7 @@ int gpio_init( void )
 		return -EIO;
 	}
 	
+	
 	for (size_t i = 0; i < ARRAY_SIZE(led_pins); i++) {
 		err = gpio_pin_configure(led_port, led_pins[i], GPIO_OUTPUT);
 		if (err){
@@ -142,40 +111,60 @@ int gpio_init( void )
                       		
 		gpio_pin_set(led_port, led_pins[i], 1); 
 	}
-	
+
     nrf_gpio_range_cfg_output(28,31);
 	
 	return 0;
+
 }
 
+void radio_evt_cb(radio_evt_t const * p_event)
+{
+   if(p_event->evt_id == RADIO_EVENT_CENTRAL_POLL_EXP)
+	 {	
+
+		uint8_t cnt = p_event->chan_cnt;
+		 
+		cnt = cnt %4; 
+
+		if (cnt == 1)
+		{
+			// Toggle one of the LEDs.
+			gpio_pin_set(led_port, led_pins[0], !(rx_packet[0][0]%8>0 && rx_packet[0][0]%8<=4));
+			//gpio_pin_set(led_port, led_pins[1], !(rx_packet[1][0]%8>1 && rx_packet[1][0]%8<=5));
+			//gpio_pin_set(led_port, led_pins[2], !(rx_packet[2][0]%8>2 && rx_packet[2][0]%8<=6));
+			//gpio_pin_set(led_port, led_pins[3], !(rx_packet[3][0]%8>3));
+			tx_packet[0]++;
+		}
+		
+			
+	}
+}
 
 
 /**
  * @brief Function for application main entry.
  * 
  */
-void main(void)
+void  main(void)
 {
-   
-	NRF_POWER->DCDCEN =1;  // Enable DCDC
-   
+
     gpio_init();
 
-	
-	radio_init.is_central		= false;
+
+	radio_init.is_central		= true;
 	radio_init.mode				= mode;
 	radio_init.event_callback	= radio_evt_cb;
 	radio_init.tx_power			= tx_power;
 	radio_init.tx_buf			= tx_packet;
-	radio_init.rx_buf			= rx_packet;
-	radio_init.tx_length		= PERIPH_PKT_SIZE;//sizeof(tx_packet);
-
+	radio_init.rx_buf			= &rx_packet[0][0];
+	radio_init.tx_length		= sizeof(tx_packet);
+ 
     radio_setup(radio_init);
-    radio_start_receive();
-    
+	
+	radio_start_poll();
+   
+    LOG_INF("Radio transmitter example started.");
 
 }
 
-/**
- *@}
- **/

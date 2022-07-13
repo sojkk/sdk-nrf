@@ -16,9 +16,9 @@
    Debug Pins
 */
 /********************************************************************************************/
-#define PIN_CHANNEL_HOP     31
-#define PIN_DATA_RECEIVED   30
-#define PIN_DATA_TX     		29
+#define PIN_CHANNEL_HOP       31
+#define PIN_DATA_RECEIVED     30
+#define PIN_DATA_TX           29
 
 /**
    RADIO parameters
@@ -34,7 +34,7 @@
 #define RF_RX_LOSS_PERIOD         RF_RX_SEARCH_PERIOD
 #define RF_RX_OPERATE_CNT         EVENT_US - T2_ADJ
 
-#define PERIPH_NUM					1
+#define PERIPH_NUM					   1
 #define PERIPH_TX_DELAY_OFFSET		280
 #define PERIPH_TX_DELAY_PERIOD		140
 
