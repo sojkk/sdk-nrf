@@ -21,10 +21,10 @@
 /**
    Debug Pins
 */
-/********************************************************************************************/
-#define PIN_CHANNEL_HOP       31
-#define PIN_DATA_RECEIVED     30
-#define PIN_DATA_TX           29
+/*******************************************************************************************************************/
+#define PIN_CHANNEL_HOP       31 // used by both central and periph to indicate channel hopping when it is toggled
+#define PIN_DATA_RECEIVED     30 // used by periph to indicate data is received
+#define PIN_DATA_TX           29 // used by periph to indicate ack data is sent
 
 /**
    RADIO parameters
