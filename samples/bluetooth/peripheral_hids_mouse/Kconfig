@@ -19,4 +19,9 @@ config BT_DIRECTED_ADVERTISING
 	bool "Enable directed advertising"
 	default y
 
+
+config BT_HIDS_APP_LOG_LEVEL
+	int "Log level for the peripheral his mouse"
+	default 4
+
 endmenu

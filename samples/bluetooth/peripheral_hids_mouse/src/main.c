@@ -15,6 +15,8 @@
 #include <soc.h>
 #include <assert.h>
 
+#include <zephyr/logging/log.h>
+
 #include <zephyr/settings/settings.h>
 
 #include <zephyr/bluetooth/bluetooth.h>
@@ -71,6 +73,9 @@
 /* Key used to accept or reject passkey value */
 #define KEY_PAIRING_ACCEPT DK_BTN1_MSK
 #define KEY_PAIRING_REJECT DK_BTN2_MSK
+
+
+LOG_MODULE_REGISTER(main, CONFIG_BT_HIDS_APP_LOG_LEVEL);
 
 /* HIDS instance. */
 BT_HIDS_DEF(hids_obj,
@@ -765,6 +770,8 @@ void main(void)
 	int err;
 
 	printk("Starting Bluetooth Peripheral HIDS mouse example\n");
+
+	LOG_INF("Log info success");
 
 	if (IS_ENABLED(CONFIG_BT_HIDS_SECURITY_ENABLED)) {
 /*		
