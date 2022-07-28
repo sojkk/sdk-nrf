@@ -258,8 +258,12 @@ static bool is_conn_slot_free(void)
 static void connected(struct bt_conn *conn, uint8_t err)
 {
 	char addr[BT_ADDR_LE_STR_LEN];
+	bt_security_t  sec_lvl;
 
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+
+	sec_lvl  = bt_conn_get_security(conn);
+	printk("Security Level =%d\n", sec_lvl);
 
 	if (err) {
 		if (err == BT_HCI_ERR_ADV_TIMEOUT) {
@@ -551,6 +555,8 @@ static void mouse_handler(struct k_work *work)
 }
 
 #if defined(CONFIG_BT_HIDS_SECURITY_ENABLED)
+
+#if 0
 static void auth_passkey_display(struct bt_conn *conn, unsigned int passkey)
 {
 	char addr[BT_ADDR_LE_STR_LEN];
@@ -596,6 +602,7 @@ static void auth_cancel(struct bt_conn *conn)
 	printk("Pairing cancelled: %s\n", addr);
 }
 
+#endif
 
 static void pairing_complete(struct bt_conn *conn, bool bonded)
 {
@@ -626,12 +633,13 @@ static void pairing_failed(struct bt_conn *conn, enum bt_security_err reason)
 	printk("Pairing failed conn: %s, reason %d\n", addr, reason);
 }
 
-
+/*
 static struct bt_conn_auth_cb conn_auth_callbacks = {
-	.passkey_display = auth_passkey_display,
-	.passkey_confirm = auth_passkey_confirm,
+	.passkey_display = NULL,
+	.passkey_confirm = NULL,
 	.cancel = auth_cancel,
 };
+*/
 
 static struct bt_conn_auth_info_cb conn_auth_info_callbacks = {
 	.pairing_complete = pairing_complete,
@@ -759,12 +767,13 @@ void main(void)
 	printk("Starting Bluetooth Peripheral HIDS mouse example\n");
 
 	if (IS_ENABLED(CONFIG_BT_HIDS_SECURITY_ENABLED)) {
+/*		
 		err = bt_conn_auth_cb_register(&conn_auth_callbacks);
 		if (err) {
 			printk("Failed to register authorization callbacks.\n");
 			return;
 		}
-
+*/
 		err = bt_conn_auth_info_cb_register(&conn_auth_info_callbacks);
 		if (err) {
 			printk("Failed to register authorization info callbacks.\n");
