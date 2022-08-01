@@ -30,6 +30,15 @@
 #include <zephyr/bluetooth/services/dis.h>
 #include <dk_buttons_and_leds.h>
 
+
+#ifdef CONFIG_MCUMGR
+#include "img_mgmt/img_mgmt.h"
+#include "os_mgmt/os_mgmt.h"
+#include <img_mgmt/img_mgmt_impl.h>
+#include <mgmt/mcumgr/smp_bt.h>
+#endif
+
+
 #define DEVICE_NAME     CONFIG_BT_DEVICE_NAME
 #define DEVICE_NAME_LEN (sizeof(DEVICE_NAME) - 1)
 
@@ -802,6 +811,14 @@ void main(void)
 	k_work_init(&hids_work, mouse_handler);
 	k_work_init(&pairing_work, pairing_process);
 	k_work_init(&adv_work, advertising_process);
+
+
+#ifdef CONFIG_MCUMGR
+	smp_bt_register();
+	os_mgmt_register_group();
+	img_mgmt_register_group();
+#endif
+
 
 	if (IS_ENABLED(CONFIG_SETTINGS)) {
 		settings_load();
