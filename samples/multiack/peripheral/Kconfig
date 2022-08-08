@@ -8,6 +8,14 @@ source "Kconfig.zephyr"
 
 menu "Multiack : Central"
 
+config NRF52840
+    bool "Using Nordic nRF52840"
+    default n
+
+config NRF5340
+	bool "Using Nordic nRF5340"
+	default n
+
 config APP_LOG_LEVEL
 	int "Log level for multiack central sample"
 	default 4

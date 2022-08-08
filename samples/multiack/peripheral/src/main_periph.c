@@ -70,16 +70,28 @@ static const uint8_t  led_pins[] = {DT_GPIO_PIN(DT_ALIAS(led0), gpios),
 static const struct device *led_port;
 
 static radio_modes_t		mode = MODE_2_MBIT;
+#if defined(CONFIG_NRF5340)
+static radio_power_t  		tx_power = RADIO_TX_POWER_0DBM;
+#else
 static radio_power_t  		tx_power = RADIO_TX_POWER_4DBM;
+#endif
 static uint8_t				rx_packet[32];              /**< Packet to receive */
 
 #if (PERIPH_NUM == 1)
 static uint8_t						tx_packet[] = {	0, 'b', 'c', 'd', 'e', 'f', 'g','h', 	\
 													'a', 'b', 'c', 'd', 'e', 'f', 'g','h',	\
 													'a', 'b', 'c', 'd', 'e', 'f', 'g','h', 	\
+													'a', 'b', 'c', 'd', 'e', 'f', 'g','h',	\
+													'a', 'b', 'c', 'd', 'e', 'f', 'g','h', 	\
+													'a', 'b', 'c', 'd', 'e', 'f', 'g','h',	\
+													'a', 'b', 'c', 'd', 'e', 'f', 'g','h', 	\
 													'a', 'b', 'c', 'd', 'e', 'f', 'g','h', };
 #elif (PERIPH_NUM == 2)
 static uint8_t						tx_packet[] = { 0, 'B', 'C', 'D', 'E', 'F', 'G','H',	\
+													'A', 'B', 'C', 'D', 'E', 'F', 'G','H',	\
+													'A', 'B', 'C', 'D', 'E', 'F', 'G','H',	\
+													'A', 'B', 'C', 'D', 'E', 'F', 'G','H',	\
+													'A', 'B', 'C', 'D', 'E', 'F', 'G','H',	\
 													'A', 'B', 'C', 'D', 'E', 'F', 'G','H',	\
 													'A', 'B', 'C', 'D', 'E', 'F', 'G','H',	\
 													'A', 'B', 'C', 'D', 'E', 'F', 'G','H', };																				 
@@ -139,12 +151,17 @@ int gpio_init( void )
 					LOG_ERR("Unable to configure LED%u, err %d", i, err);
 					led_port = NULL;
 					return err;
-				}
-                      		
+				}                      		
 		gpio_pin_set(led_port, led_pins[i], 1); 
 	}
 	
+	#if defined(CONFIG_NRF5340)
+	nrf_gpio_cfg_output(7);
+	nrf_gpio_cfg_output(25);
+	nrf_gpio_cfg_output(26);
+	#else
     nrf_gpio_range_cfg_output(28,31);
+	#endif
 	
 	return 0;
 }
@@ -157,9 +174,12 @@ int gpio_init( void )
  */
 void main(void)
 {
-   
+
+#if !defined(CONFIG_NRF5340)  
 	NRF_POWER->DCDCEN =1;  // Enable DCDC
-   
+#endif  
+
+
     gpio_init();
 
 	

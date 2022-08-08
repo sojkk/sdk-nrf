@@ -41,11 +41,13 @@ typedef enum
 
 /**@brief Enhanced ShockBurst radio transmission power modes. */
 typedef enum {
-#ifdef NRF52840_XXAA	
+#if defined(CONFIG_NRF52840)	
     RADIO_POWER_8DBM     = RADIO_TXPOWER_TXPOWER_Pos8dBm,  /**< 8 dBm radio transmit power.   */
 #endif	
+#if !defined(CONFIG_NRF5340)
     RADIO_TX_POWER_4DBM     = RADIO_TXPOWER_TXPOWER_Pos4dBm,  /**< 4 dBm radio transmit power.   */
     RADIO_TX_POWER_3DBM     = RADIO_TXPOWER_TXPOWER_Pos3dBm,  /**< 3 dBm radio transmit power.   */
+#endif
     RADIO_TX_POWER_0DBM     = RADIO_TXPOWER_TXPOWER_0dBm,     /**< 0 dBm radio transmit power.   */
     RADIO_TX_POWER_NEG4DBM  = RADIO_TXPOWER_TXPOWER_Neg4dBm,  /**< -4 dBm radio transmit power.  */
     RADIO_TX_POWER_NEG8DBM  = RADIO_TXPOWER_TXPOWER_Neg8dBm,  /**< -8 dBm radio transmit power.  */

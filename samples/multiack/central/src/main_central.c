@@ -72,8 +72,12 @@ static const uint8_t  led_pins[] = {DT_GPIO_PIN(DT_ALIAS(led0), gpios),
 static const struct device *led_port;
 
 static radio_modes_t mode = MODE_2_MBIT;
-static radio_power_t tx_power = RADIO_TX_POWER_4DBM;
 
+#if defined(CONFIG_NRF5340)
+static radio_power_t tx_power = RADIO_TX_POWER_0DBM;
+#else
+static radio_power_t tx_power = RADIO_TX_POWER_4DBM;
+#endif
 
 //32 bytes packet
 static uint8_t      	tx_packet[]   = { 1,  2,  3,  4,  5,  6,  7,  8, 
