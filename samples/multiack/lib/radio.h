@@ -44,7 +44,9 @@ typedef enum {
 #if defined(CONFIG_NRF52840)	
     RADIO_POWER_8DBM     = RADIO_TXPOWER_TXPOWER_Pos8dBm,  /**< 8 dBm radio transmit power.   */
 #endif	
-#if !defined(CONFIG_NRF5340)
+#if defined(CONFIG_NRF5340)
+    RADIO_TX_POWER_3DBM     = RADIO_TXPOWER_TXPOWER_0dBm,  /**< 3 dBm radio transmit power.   */
+#else
     RADIO_TX_POWER_4DBM     = RADIO_TXPOWER_TXPOWER_Pos4dBm,  /**< 4 dBm radio transmit power.   */
     RADIO_TX_POWER_3DBM     = RADIO_TXPOWER_TXPOWER_Pos3dBm,  /**< 3 dBm radio transmit power.   */
 #endif

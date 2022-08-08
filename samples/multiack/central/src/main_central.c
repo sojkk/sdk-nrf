@@ -74,7 +74,7 @@ static const struct device *led_port;
 static radio_modes_t mode = MODE_2_MBIT;
 
 #if defined(CONFIG_NRF5340)
-static radio_power_t tx_power = RADIO_TX_POWER_0DBM;
+static radio_power_t tx_power = RADIO_TX_POWER_3DBM;
 #else
 static radio_power_t tx_power = RADIO_TX_POWER_4DBM;
 #endif
@@ -152,6 +152,16 @@ void radio_evt_cb(radio_evt_t const * p_event)
  */
 void  main(void)
 {
+
+	//+3dBm for nRF5340
+#if defined(CONFIG_NRF5340)
+	if( tx_power == RADIO_TX_POWER_3DBM)
+	{
+		NRF_VREQCTRL->VREGRADIO.VREQH=1;
+		while (NRF_VREQCTRL->VREGRADIO.VREQHREADY==false)
+	  		;
+	}	
+#endif
 
     gpio_init();
 
