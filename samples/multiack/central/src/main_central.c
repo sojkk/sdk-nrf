@@ -116,7 +116,13 @@ int gpio_init( void )
 		gpio_pin_set(led_port, led_pins[i], 1); 
 	}
 
+    #if defined(CONFIG_NRF5340)
+	nrf_gpio_cfg_output(7);
+	nrf_gpio_cfg_output(25);
+	nrf_gpio_cfg_output(26);
+	#else
     nrf_gpio_range_cfg_output(28,31);
+	#endif
 	
 	return 0;
 
