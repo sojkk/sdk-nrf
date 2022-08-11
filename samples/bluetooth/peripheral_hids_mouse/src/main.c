@@ -663,7 +663,7 @@ static struct bt_conn_auth_info_cb conn_auth_info_callbacks = {
 static struct bt_conn_auth_cb conn_auth_callbacks;
 #endif
 
-
+/*
 static void num_comp_reply(bool accept)
 {
 	struct pairing_data_mitm pairing_data;
@@ -689,7 +689,7 @@ static void num_comp_reply(bool accept)
 		k_work_submit(&pairing_work);
 	}
 }
-
+*/
 
 void button_changed(uint32_t button_state, uint32_t has_changed)
 {
@@ -698,7 +698,7 @@ void button_changed(uint32_t button_state, uint32_t has_changed)
 	uint32_t buttons = button_state & has_changed;
 
 	memset(&pos, 0, sizeof(struct mouse_pos));
-
+/*
 	if (k_msgq_num_used_get(&mitm_queue)) {
 		if (buttons & KEY_PAIRING_ACCEPT) {
 			num_comp_reply(true);
@@ -712,7 +712,7 @@ void button_changed(uint32_t button_state, uint32_t has_changed)
 			return;
 		}
 	}
-
+*/
 	if (buttons & KEY_LEFT_MASK) {
 		pos.x_val -= MOVEMENT_SPEED;
 		printk("%s(): left\n", __func__);
