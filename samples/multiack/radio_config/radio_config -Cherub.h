@@ -22,16 +22,22 @@
    Debug Pins
 */
 /*******************************************************************************************************************/
+#if defined(CONFIG_NRF5340)
+#define PIN_CHANNEL_HOP       26 // used by both central and periph to indicate channel hopping when it is toggled
+#define PIN_DATA_RECEIVED     25 // used by periph to indicate data is received
+#define PIN_DATA_TX            7 // used by periph to indicate ack data is sent
+#else
 #define PIN_CHANNEL_HOP       31 // used by both central and periph to indicate channel hopping when it is toggled
 #define PIN_DATA_RECEIVED     30 // used by periph to indicate data is received
 #define PIN_DATA_TX           29 // used by periph to indicate ack data is sent
+#endif
 
 /**
    RADIO parameters
 */
 /********************************************************************************************/
 
-#define PERIPH_NUM					   2
+#define PERIPH_NUM					   1
 
 #define T2_ADJ                    315
 #define EVENT_US                  1500       // 1.5ms

@@ -22,25 +22,19 @@
    Debug Pins
 */
 /*******************************************************************************************************************/
-#if defined(CONFIG_NRF5340)
-#define PIN_CHANNEL_HOP       26 // used by both central and periph to indicate channel hopping when it is toggled
-#define PIN_DATA_RECEIVED     25 // used by periph to indicate data is received
-#define PIN_DATA_TX            7 // used by periph to indicate ack data is sent
-#else
 #define PIN_CHANNEL_HOP       31 // used by both central and periph to indicate channel hopping when it is toggled
 #define PIN_DATA_RECEIVED     30 // used by periph to indicate data is received
 #define PIN_DATA_TX           29 // used by periph to indicate ack data is sent
-#endif
 
 /**
    RADIO parameters
 */
 /********************************************************************************************/
 
-#define PERIPH_NUM					   1
+#define PERIPH_NUM					   2
 
-#define T2_ADJ                    315
-#define EVENT_US                  1500       // 1.5ms
+#define T2_ADJ                    305
+#define EVENT_US                  600       // 600us
 #define RF_CHAN_TAB_SIZE          15
 #define RF_RX_OPERATE_PERIOD      EVENT_US
 #define RF_RX_SEARCH_PERIOD       RF_RX_OPERATE_PERIOD* (RF_CHAN_TAB_SIZE +1)
@@ -49,10 +43,10 @@
 
 
 #define PERIPH_TX_DELAY_OFFSET		280
-#define PERIPH_TX_DELAY_PERIOD		350
+#define PERIPH_TX_DELAY_PERIOD		140
 
 
-#define	PERIPH_PKT_SIZE						64
+#define	PERIPH_PKT_SIZE						10
 static const uint8_t  RF_CHANNEL_TAB[] =  {  6, 28, 52, 76, 24, \
                                             48, 72, 20, 44, 68, \
                                             16, 40, 64, 12, 36    };
