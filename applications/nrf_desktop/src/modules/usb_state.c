@@ -628,6 +628,8 @@ static void verify_report_bm(void)
 
 static int usb_init(void)
 {
+	int err;
+
 	static const struct hid_ops hid_ops = {
 		.get_report = get_report,
 		.set_report = set_report,
@@ -636,7 +638,7 @@ static int usb_init(void)
 	};
 
 	verify_report_bm();
-
+/*
 	for (size_t i = 0; i < CONFIG_USB_HID_DEVICE_COUNT; i++) {
 		char name[32];
 		int err = snprintf(name, sizeof(name), CONFIG_USB_HID_DEVICE_NAME "_%d", i);
@@ -663,12 +665,56 @@ static int usb_init(void)
 			return err;
 		}
 	}
+*/
+/***********************************************************/
+	
+
+	usb_hid_device[0].dev = device_get_binding("HID_0");
+		if (usb_hid_device[0].dev == NULL) {
+			return -ENXIO;
+		}
+
+	usb_hid_device[0].hid_protocol = HID_PROTOCOL_REPORT;
+	usb_hid_device[0].sent_report_id = REPORT_ID_COUNT;
+	usb_hid_device[0].report_bm = get_report_bm(0);
+
+	usb_hid_register_device(usb_hid_device[0].dev, hid_report_desc_0,
+					hid_report_desc_size_0, &hid_ops);
+
+	err = usb_hid_init(usb_hid_device[0].dev);
+	if (err) {
+		LOG_ERR("Cannot initialize HID class");
+		return err;
+	}
+
+/***********************************************************/
+
+
+	usb_hid_device[1].dev = device_get_binding("HID_1");
+		if (usb_hid_device[1].dev == NULL) {
+			return -ENXIO;
+		}
+
+	usb_hid_device[1].hid_protocol = HID_PROTOCOL_REPORT;
+	usb_hid_device[1].sent_report_id = REPORT_ID_COUNT;
+	usb_hid_device[1].report_bm = get_report_bm(1);
+
+	usb_hid_register_device(usb_hid_device[1].dev, hid_report_desc_1,
+					hid_report_desc_size_1, &hid_ops);
+
+	err = usb_hid_init(usb_hid_device[1].dev);
+	if (err) {
+		LOG_ERR("Cannot initialize HID class");
+		return err;
+	}
+
+/***********************************************************/
 
 	if (IS_ENABLED(CONFIG_DESKTOP_CONFIG_CHANNEL_ENABLE)) {
 		config_channel_transport_init(&cfg_chan_transport);
 	}
 
-	int err = usb_enable(device_status);
+	err = usb_enable(device_status);
 
 	if (err) {
 		LOG_ERR("Cannot enable USB (err: %d)", err);

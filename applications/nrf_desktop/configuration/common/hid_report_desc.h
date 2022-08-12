@@ -59,8 +59,11 @@ static const uint8_t output_reports[] = {
 };
 
 
-extern const uint8_t hid_report_desc[];
-extern const size_t hid_report_desc_size;
+extern const uint8_t hid_report_desc_0[];
+extern const size_t hid_report_desc_size_0;
+
+extern const uint8_t hid_report_desc_1[];
+extern const size_t hid_report_desc_size_1;
 
 #ifdef __cplusplus
 }
