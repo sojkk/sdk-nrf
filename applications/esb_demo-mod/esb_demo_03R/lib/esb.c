@@ -23,16 +23,16 @@
 /* 2 Mb RX wait for acknowledgment time-out value.
  * Smallest reliable value: 160.
  */
-#define RX_ACK_TIMEOUT_US_2MBPS 160
+#define RX_ACK_TIMEOUT_US_2MBPS 45//160
 /* 1 Mb RX wait for acknowledgment time-out value. */
-#define RX_ACK_TIMEOUT_US_1MBPS 300
+#define RX_ACK_TIMEOUT_US_1MBPS 73//300
 /* 250 Kb RX wait for acknowledgment time-out value. */
-#define RX_ACK_TIMEOUT_US_250KBPS 300
+#define RX_ACK_TIMEOUT_US_250KBPS 250//300
 /* 1 Mb RX wait for acknowledgment time-out (combined with BLE). */
-#define RX_ACK_TIMEOUT_US_1MBPS_BLE 300
+#define RX_ACK_TIMEOUT_US_1MBPS_BLE 73//300
 
 /* Minimum retransmit time */
-#define RETRANSMIT_DELAY_MIN 435
+#define RETRANSMIT_DELAY_MIN 62//435
 
 /* Interrupt flags */
 /* Interrupt mask value for TX success. */
@@ -690,13 +690,13 @@ static void on_radio_disabled_tx(void)
 	 * received by the time defined in wait_for_ack_timeout_us
 	 */
 	ESB_SYS_TIMER->CC[0] = wait_for_ack_timeout_us;
-	ESB_SYS_TIMER->CC[1] = esb_cfg.retransmit_delay - esb_cfg.ru_time; //JS_Modify;
+	ESB_SYS_TIMER->CC[1] = esb_cfg.retransmit_delay - esb_cfg.ru_time; //JS_Modify
 	ESB_SYS_TIMER->TASKS_CLEAR = 1;
 	ESB_SYS_TIMER->EVENTS_COMPARE[0] = 0;
 	ESB_SYS_TIMER->EVENTS_COMPARE[1] = 0;
 
 	/* Remove */
-	ESB_SYS_TIMER->TASKS_START = 1;
+	//ESB_SYS_TIMER->TASKS_START = 1;
 
 	nrfx_gppi_channels_enable(ppi_all_channels_mask);
 	nrfx_gppi_channels_disable(1 << ppi_ch_timer_compare1_radio_txen);
@@ -943,7 +943,8 @@ static void RADIO_IRQHandler(void)
 	if (NRF_RADIO->EVENTS_READY &&
 	    (NRF_RADIO->INTENSET & RADIO_INTENSET_READY_Msk)) {
 		NRF_RADIO->EVENTS_READY = 0;
-		ESB_SYS_TIMER->TASKS_START;
+		/* Remove */
+		//ESB_SYS_TIMER->TASKS_START;
 	}
 
 	if (NRF_RADIO->EVENTS_END &&
