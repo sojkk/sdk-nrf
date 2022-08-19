@@ -83,6 +83,8 @@
 #define KEY_PAIRING_ACCEPT DK_BTN1_MSK
 #define KEY_PAIRING_REJECT DK_BTN2_MSK
 
+#define ADV_INTERVAL_MIN  0x0028
+#define ADV_INTERVAL_MAX  0x0C80
 
 LOG_MODULE_REGISTER(main, CONFIG_BT_HIDS_APP_LOG_LEVEL);
 
@@ -170,6 +172,10 @@ static void bond_find(const struct bt_bond_info *info, void *user_data)
 static void advertising_continue(void)
 {
 	struct bt_le_adv_param adv_param;
+
+	adv_param.interval_min = ADV_INTERVAL_MIN;
+	adv_param.interval_max = ADV_INTERVAL_MAX;
+
 
 #if CONFIG_BT_DIRECTED_ADVERTISING
 	bt_addr_le_t addr;
