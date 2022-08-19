@@ -132,7 +132,7 @@ static struct conn_mode {
 
 static struct k_work adv_work;
 
-static struct k_work pairing_work;
+//static struct k_work pairing_work;
 struct pairing_data_mitm {
 	struct bt_conn *conn;
 	unsigned int passkey;
@@ -222,6 +222,7 @@ static void advertising_process(struct k_work *work)
 	advertising_continue();
 }
 
+/*
 static void pairing_process(struct k_work *work)
 {
 	int err;
@@ -240,7 +241,7 @@ static void pairing_process(struct k_work *work)
 	printk("Passkey for %s: %06u\n", addr, pairing_data.passkey);
 	printk("Press Button 1 to confirm, Button 2 to reject.\n");
 }
-
+*/
 
 static void insert_conn_object(struct bt_conn *conn)
 {
@@ -809,7 +810,7 @@ void main(void)
 	hid_init();
 
 	k_work_init(&hids_work, mouse_handler);
-	k_work_init(&pairing_work, pairing_process);
+	//k_work_init(&pairing_work, pairing_process);
 	k_work_init(&adv_work, advertising_process);
 
 
