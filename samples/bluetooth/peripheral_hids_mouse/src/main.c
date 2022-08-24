@@ -34,7 +34,6 @@
 #ifdef CONFIG_MCUMGR
 #include "img_mgmt/img_mgmt.h"
 #include "os_mgmt/os_mgmt.h"
-#include <img_mgmt/img_mgmt_impl.h>
 #include <mgmt/mcumgr/smp_bt.h>
 #endif
 
@@ -228,26 +227,7 @@ static void advertising_process(struct k_work *work)
 	advertising_continue();
 }
 
-/*
-static void pairing_process(struct k_work *work)
-{
-	int err;
-	struct pairing_data_mitm pairing_data;
 
-	char addr[BT_ADDR_LE_STR_LEN];
-
-	err = k_msgq_peek(&mitm_queue, &pairing_data);
-	if (err) {
-		return;
-	}
-
-	bt_addr_le_to_str(bt_conn_get_dst(pairing_data.conn),
-			  addr, sizeof(addr));
-
-	printk("Passkey for %s: %06u\n", addr, pairing_data.passkey);
-	printk("Press Button 1 to confirm, Button 2 to reject.\n");
-}
-*/
 
 static void insert_conn_object(struct bt_conn *conn)
 {
@@ -255,7 +235,6 @@ static void insert_conn_object(struct bt_conn *conn)
 		if (!conn_mode[i].conn) {
 			conn_mode[i].conn = conn;
 			conn_mode[i].in_boot_mode = false;
-
 			return;
 		}
 	}
@@ -577,53 +556,6 @@ static void mouse_handler(struct k_work *work)
 
 #if defined(CONFIG_BT_HIDS_SECURITY_ENABLED)
 
-#if 0
-static void auth_passkey_display(struct bt_conn *conn, unsigned int passkey)
-{
-	char addr[BT_ADDR_LE_STR_LEN];
-
-	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-
-	printk("Passkey for %s: %06u\n", addr, passkey);
-}
-
-
-static void auth_passkey_confirm(struct bt_conn *conn, unsigned int passkey)
-{
-	int err;
-
-	struct pairing_data_mitm pairing_data;
-
-	pairing_data.conn    = bt_conn_ref(conn);
-	pairing_data.passkey = passkey;
-
-	err = k_msgq_put(&mitm_queue, &pairing_data, K_NO_WAIT);
-	if (err) {
-		printk("Pairing queue is full. Purge previous data.\n");
-	}
-
-	/* In the case of multiple pairing requests, trigger
-	 * pairing confirmation which needed user interaction only
-	 * once to avoid display information about all devices at
-	 * the same time. Passkey confirmation for next devices will
-	 * be proccess from queue after handling the earlier ones.
-	 */
-	if (k_msgq_num_used_get(&mitm_queue) == 1) {
-		k_work_submit(&pairing_work);
-	}
-}
-
-
-static void auth_cancel(struct bt_conn *conn)
-{
-	char addr[BT_ADDR_LE_STR_LEN];
-
-	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-
-	printk("Pairing cancelled: %s\n", addr);
-}
-
-#endif
 
 static void pairing_complete(struct bt_conn *conn, bool bonded)
 {
@@ -654,13 +586,6 @@ static void pairing_failed(struct bt_conn *conn, enum bt_security_err reason)
 	printk("Pairing failed conn: %s, reason %d\n", addr, reason);
 }
 
-/*
-static struct bt_conn_auth_cb conn_auth_callbacks = {
-	.passkey_display = NULL,
-	.passkey_confirm = NULL,
-	.cancel = auth_cancel,
-};
-*/
 
 static struct bt_conn_auth_info_cb conn_auth_info_callbacks = {
 	.pairing_complete = pairing_complete,
@@ -670,33 +595,6 @@ static struct bt_conn_auth_info_cb conn_auth_info_callbacks = {
 static struct bt_conn_auth_cb conn_auth_callbacks;
 #endif
 
-/*
-static void num_comp_reply(bool accept)
-{
-	struct pairing_data_mitm pairing_data;
-	struct bt_conn *conn;
-
-	if (k_msgq_get(&mitm_queue, &pairing_data, K_NO_WAIT) != 0) {
-		return;
-	}
-
-	conn = pairing_data.conn;
-
-	if (accept) {
-		bt_conn_auth_passkey_confirm(conn);
-		printk("Numeric Match, conn %p\n", conn);
-	} else {
-		bt_conn_auth_cancel(conn);
-		printk("Numeric Reject, conn %p\n", conn);
-	}
-
-	bt_conn_unref(pairing_data.conn);
-
-	if (k_msgq_num_used_get(&mitm_queue)) {
-		k_work_submit(&pairing_work);
-	}
-}
-*/
 
 void button_changed(uint32_t button_state, uint32_t has_changed)
 {
@@ -705,21 +603,7 @@ void button_changed(uint32_t button_state, uint32_t has_changed)
 	uint32_t buttons = button_state & has_changed;
 
 	memset(&pos, 0, sizeof(struct mouse_pos));
-/*
-	if (k_msgq_num_used_get(&mitm_queue)) {
-		if (buttons & KEY_PAIRING_ACCEPT) {
-			num_comp_reply(true);
 
-			return;
-		}
-
-		if (buttons & KEY_PAIRING_REJECT) {
-			num_comp_reply(false);
-
-			return;
-		}
-	}
-*/
 	if (buttons & KEY_LEFT_MASK) {
 		pos.x_val -= MOVEMENT_SPEED;
 		printk("%s(): left\n", __func__);
@@ -790,19 +674,21 @@ void main(void)
 	LOG_INF("Log info success");
 
 	if (IS_ENABLED(CONFIG_BT_HIDS_SECURITY_ENABLED)) {
-/*		
-		err = bt_conn_auth_cb_register(&conn_auth_callbacks);
-		if (err) {
-			printk("Failed to register authorization callbacks.\n");
-			return;
-		}
-*/
+
 		err = bt_conn_auth_info_cb_register(&conn_auth_info_callbacks);
 		if (err) {
 			printk("Failed to register authorization info callbacks.\n");
 			return;
 		}
 	}
+
+#ifdef CONFIG_MCUMGR
+	printk("build time: " __DATE__ " " __TIME__ "\n");
+	os_mgmt_register_group();
+	img_mgmt_register_group();
+	smp_bt_register();	
+#endif
+
 
 	err = bt_enable(NULL);
 	if (err) {
@@ -816,15 +702,8 @@ void main(void)
 	hid_init();
 
 	k_work_init(&hids_work, mouse_handler);
-	//k_work_init(&pairing_work, pairing_process);
+
 	k_work_init(&adv_work, advertising_process);
-
-
-#ifdef CONFIG_MCUMGR
-	smp_bt_register();
-	os_mgmt_register_group();
-	img_mgmt_register_group();
-#endif
 
 
 	if (IS_ENABLED(CONFIG_SETTINGS)) {
