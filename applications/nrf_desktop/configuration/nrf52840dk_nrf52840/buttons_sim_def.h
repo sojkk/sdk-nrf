@@ -16,11 +16,12 @@
 const struct {} buttons_sim_def_include_once;
 
 const static uint16_t simulated_key_sequence[] = {
+	KEY_ID(0x00, 0x39), /* caplock */
 	KEY_ID(0x00, 0x11), /* N */
 	KEY_ID(0x00, 0x12), /* O */
 	KEY_ID(0x00, 0x15), /* R */
 	KEY_ID(0x00, 0x07), /* D */
 	KEY_ID(0x00, 0x0C), /* I */
 	KEY_ID(0x00, 0x06), /* C */
-	KEY_ID(0x00, 0x2C), /* spacebar */
+	KEY_ID(0x00, 0x28), /* enter */
 };

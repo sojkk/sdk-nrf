@@ -16,7 +16,11 @@
 #include "buttons_sim_def.h"
 
 #include <zephyr/logging/log.h>
+
 LOG_MODULE_REGISTER(MODULE, CONFIG_DESKTOP_BUTTONS_SIM_LOG_LEVEL);
+
+static uint16_t gen_key_cnt = 1;
+
 
 enum state {
 	STATE_DISABLED,
@@ -92,6 +96,11 @@ static bool generate_button_event(void)
 		return false;
 	}
 
+	if(key_id == 0x0039)
+	{
+		printk("buttons_sim.c : caplock generate , cnt = %u\r\n", gen_key_cnt);
+		gen_key_cnt++;
+	}
 	send_button_event(key_id, true);
 	send_button_event(key_id, false);
 
@@ -103,6 +112,9 @@ void generate_keys_fn(struct k_work *w)
 	if (generate_button_event()) {
 		k_work_reschedule(&generate_keys,
 				K_MSEC(CONFIG_DESKTOP_BUTTONS_SIM_INTERVAL));
+				
+	
+				
 	} else {
 		state = STATE_IDLE;
 	}
@@ -118,6 +130,7 @@ static bool app_event_handler(const struct app_event_header *aeh)
 				switch (state) {
 				case STATE_IDLE:
 					start_generating_keys();
+					
 					break;
 
 				case STATE_ACTIVE:

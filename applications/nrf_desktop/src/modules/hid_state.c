@@ -75,6 +75,8 @@ enum state {
 
 #define AXIS_COUNT (IS_ENABLED(CONFIG_DESKTOP_HID_REPORT_MOUSE_SUPPORT) * MOUSE_REPORT_AXIS_COUNT)
 
+static  uint16_t caplock_led_cnt = 1; 
+
 /**@brief HID state item. */
 struct item {
 	uint16_t usage_id; /**< HID usage ID. */
@@ -1075,6 +1077,8 @@ static void update_led(uint8_t led_id, const struct led_effect *effect)
 
 static void broadcast_keyboard_leds(void)
 {
+
+	
 	BUILD_ASSERT(HID_KEYBOARD_LEDS_COUNT <= CHAR_BIT);
 	BUILD_ASSERT(REPORT_SIZE_KEYBOARD_LEDS == 1);
 
@@ -1084,12 +1088,24 @@ static void broadcast_keyboard_leds(void)
 	static uint8_t displayed_leds_state;
 	uint8_t new_leds_state = sub ? sub->output_reports[idx].data[0] : 0;
 	uint8_t update_needed = (displayed_leds_state ^ new_leds_state);
+	
 
 	for (size_t i = 0; i < ARRAY_SIZE(keyboard_led_map); i++) {
 		if (update_needed & BIT(i)) {
 			update_led(keyboard_led_map[i],
 				((new_leds_state & BIT(i)) ? &keyboard_led_on : &keyboard_led_off));
+					
+
+		if(i == HID_KEYBOARD_LEDS_CAPS_LOCK)	
+		{
+			printk("hid_state.c : caplock LED set, cnt = %u\r\n", caplock_led_cnt); 
+			caplock_led_cnt++;
+		}	
+					
 		}
+		
+ 	  
+		
 	}
 
 	displayed_leds_state = new_leds_state;

@@ -24,7 +24,7 @@ const struct {} hid_keymap_def_include_once;
 static const struct hid_keymap hid_keymap[] = {
 	{ KEY_ID(0x00, 0x00), 0x0004, REPORT_ID_KEYBOARD_KEYS }, /* A */
 	{ KEY_ID(0x00, 0x01), 0x0005, REPORT_ID_KEYBOARD_KEYS }, /* B */
-	{ KEY_ID(0x00, 0x02), 0x00E1, REPORT_ID_KEYBOARD_KEYS }, /* left shift */
+	{ KEY_ID(0x00, 0x02), 0x0039, REPORT_ID_KEYBOARD_KEYS }, /* caplock */
 
 	{ KEY_ID(0x00, 0x04), 0x0004, REPORT_ID_KEYBOARD_KEYS }, /* A */
 	{ KEY_ID(0x00, 0x05), 0x0005, REPORT_ID_KEYBOARD_KEYS }, /* B */
@@ -53,5 +53,7 @@ static const struct hid_keymap hid_keymap[] = {
 	{ KEY_ID(0x00, 0x1C), 0x001C, REPORT_ID_KEYBOARD_KEYS }, /* Y */
 	{ KEY_ID(0x00, 0x1D), 0x001D, REPORT_ID_KEYBOARD_KEYS }, /* Z */
 
+	{ KEY_ID(0x00, 0x28), 0x0028, REPORT_ID_KEYBOARD_KEYS }, /* enter */
 	{ KEY_ID(0x00, 0x2C), 0x002C, REPORT_ID_KEYBOARD_KEYS }, /* spacebar */
+	{ KEY_ID(0x00, 0x39), 0x0039, REPORT_ID_KEYBOARD_KEYS }, /* caplock */
 };
