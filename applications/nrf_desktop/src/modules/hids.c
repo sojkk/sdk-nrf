@@ -228,7 +228,7 @@ static void broadcast_kbd_leds_report(struct bt_hids_rep *rep, struct bt_conn *c
 	event->subscriber = NULL;
 	event->dyndata.data[0] = REPORT_ID_KEYBOARD_LEDS;
 	memcpy(&event->dyndata.data[1], rep->data, rep->size);
-
+	printk("hids.c: broadcast_kbd_leds_report  - REPORT_ID_KEYBOARD_LEDS event submit\r\n");
 	APP_EVENT_SUBMIT(event);
 }
 

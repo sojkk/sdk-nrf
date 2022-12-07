@@ -1273,7 +1273,6 @@ static void disconnect_subscriber(const void *subscriber_id)
 	}
 
 	memset(s, 0, sizeof(*s));
-
 	update_output_report_state();
 
 	LOG_INF("Subscriber %p disconnected", subscriber_id);
