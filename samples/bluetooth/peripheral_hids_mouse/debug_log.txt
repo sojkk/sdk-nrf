@@ -1,0 +1,91 @@
+*** Booting Zephyr OS build v3.0.99-ncs1  ***
+Starting Bluetooth Peripheral HIDS mouse example
+I: Log info success
+I: 6 Sectors of 4096 bytes
+I: alloc wra: 0, fd0
+I: data wra: 0, 1c
+I: SoftDevice Controller build revision:
+I: 33 78 2a 18 20 f5 61 61 |3x*. .aa
+I: a6 8b 77 60 62 83 39 2a |..w`b.9*
+I: 7c f1 14 e4             ||...
+I: HW Platform: Nordic Semiconductor (0x0002)
+I: HW Variant: nRF52x (0x0002)
+I: Firmware: Standard Bluetooth controller (0x00) Version 51.10872 Build 1643454488
+D: LE SC enabled
+I: No ID address. App must call settings_load()
+Bluetooth initialized
+I: Identity: C5:85:36:76:65:F0 (random)
+I: HCI: version 5.3 (0x0c) revision 0x1136, manufacturer 0x0059
+I: LMP: version 5.3 (0x0c) subver 0x1136
+D:
+Regular advertising started
+D:
+D: 50:EB:71:A1:2A:BA (public)
+D: conn 0x20001950 handle 0
+D: chan 0x20001cd4 cid 0x0006
+D: 50:EB:71:A1:2A:BA (public)
+Security Level =1
+Connected 50:EB:71:A1:2A:BA (public)
+Regular advertising started
+D: Received SMP code 0x01 len 6
+D:
+D: 50:EB:71:A1:2A:BA (public)
+D: created 0x2000289c for 50:EB:71:A1:2A:BA (public)
+D: prnd 63a9e69ebdd34465f7112257bb60f8bb
+D: Received SMP code 0x0c len 64
+D:
+D: u 401aa8695ee4c37733df97ff025bf6fe8dc20ecc913de76d7a2b8cb719a00052
+D: v 5092a10347f5ad771b5c3019a943674bfc6cd75e1c0f5602630bd99ab17bb91f
+D: x 63a9e69ebdd34465f7112257bb60f8bb z 0x0
+D: res e7b7cf81754a2dc41b2cfe99e2d21e76
+D: 0x2000713a
+D: Received SMP code 0x04 len 16
+D:
+D: Received SMP code 0x0d len 16
+D:
+D: w 3d3dd25f15d6505e951ab32f4a800fc8be652df97c07ce52b8fe2e45da238652
+D: n1 7a494c23ae7802bd78445e754ab473ba
+D: n2 63a9e69ebdd34465f7112257bb60f8bb
+D: t f139c9f7ba9c5c4bcc22bfc1dc35350c
+D: mackey 10f2a079c023152ce62cd4442251fad0
+D: ltk 14350bc19647e525c5ce81096efb22b3
+D: w d0fa512244d42ce62c1523c079a0f210
+D: n1 63a9e69ebdd34465f7112257bb60f8bb
+D: n2 7a494c23ae7802bd78445e754ab473ba
+D: r 00000000000000000000000000000000
+D: io_cap 030009
+D: a1 01f065763685c5
+D: a2 00ba2aa171eb50
+D: res 853a405c3eb967dada01137a2f164eb1
+D: w d0fa512244d42ce62c1523c079a0f210
+D: n1 7a494c23ae7802bd78445e754ab473ba
+D: n2 63a9e69ebdd34465f7112257bb60f8bb
+D: r 00000000000000000000000000000000
+D: io_cap 04002d
+D: a1 00ba2aa171eb50
+D: a2 01f065763685c5
+D: res 8a76953591814827fbce11a3927590a4
+D:
+D: 50:EB:71:A1:2A:BA (public)
+D: 50:EB:71:A1:2A:BA (public)
+D: 50:EB:71:A1:2A:BA (public) (keys 0x0000)
+D: Deleting key bt/keys/50eb71a12aba0
+D: 50:EB:71:A1:2A:BA (public)
+D: created 0x2000289c for 50:EB:71:A1:2A:BA (public)
+D: chan 0x20001cd4 conn 0x20001950 handle 0 encrypt 0x01 hci status 0x00
+Security changed: 50:EB:71:A1:2A:BA (public) level 2
+D: Received SMP code 0x08 len 16
+D:
+D: type 2 50:EB:71:A1:2A:BA (public)
+D: type 2 50:EB:71:A1:2A:BA (public)
+D: 50:EB:71:A1:2A:BA (public)
+D: Received SMP code 0x09 len 7
+D: identity 50:EB:71:A1:2A:BA (public)
+D: type 2 50:EB:71:A1:2A:BA (public)
+D: type 2 50:EB:71:A1:2A:BA (public)
+D: status 0x0
+D: Stored keys for 50:EB:71:A1:2A:BA (public) (bt/keys/50eb71a12aba0)
+Pairing completed: 50:EB:71:A1:2A:BA (public), bonded: 1
+I: BAS Notifications enabled
+D: 50:EB:71:A1:2A:BA (public)
+D: 50:EB:71:A1:2A:BA (public
