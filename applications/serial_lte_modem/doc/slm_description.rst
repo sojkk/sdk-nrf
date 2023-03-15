@@ -183,15 +183,6 @@ CONFIG_SLM_MQTTC_MESSAGE_BUFFER_LEN - Size of the buffer for the MQTT library
    This option specifies the maximum message size which can be transmitted or received through MQTT (excluding PUBLISH payload).
    The default value is 512, meaning 512 bytes for TX and RX, respectively.
 
-CONFIG_SLM_MQTTC_PUBLISH_RECEIVE_DELAY - PUBLISH message receiving delay in seconds
-   This option specifies the delay time between the MQTT_EVT_PUBLISH event and receiving the payload of the MQTT PUBLISH message.
-   The delay allows time for the modem to receive multiple TCP packets for one MQTT PUBLISH message.
-   The default value is 1 second.
-
-CONFIG_SLM_MQTTC_PUBLISH_RECEIVE_TIMEOUT - PPUBLISH message receiving timeout in seconds
-   This option specifies the maximum time that can be spent to receive the payload of one MQTT PUBLISH message.
-   The default value is 10 seconds.
-
 .. _CONFIG_SLM_HTTPC:
 
 CONFIG_SLM_HTTPC - HTTP client support in SLM

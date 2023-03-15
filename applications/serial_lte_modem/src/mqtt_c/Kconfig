@@ -18,17 +18,4 @@ config SLM_MQTTC_MESSAGE_BUFFER_LEN
 	  Specifies maximum message size can be transmitted/received through
 	  MQTT (excluding MQTT PUBLISH payload).
 	  
-config SLM_MQTTC_PUBLISH_RECEIVE_DELAY
-	int "PUBLISH message receiving delay in seconds"
-	default 1
-	help
-	  Specifies delay time to receive MQTT PUBLISH payload.
-
-config SLM_MQTTC_PUBLISH_RECEIVE_TIMEOUT
-	int "PUBLISH message receiving timeout in seconds"
-	default 10
-	help
-	  Specifies maximum time to receive MQTT PUBLISH payload.
-
-
 endif # SLM_MQTTC
