@@ -136,7 +136,7 @@ This section provides detailed lists of changes by :ref:`application <applicatio
 nRF9160: Asset Tracker v2
 -------------------------
 
-|no_changes_yet_note|
+* Correct a bug in receiving large MQTT Publish message.
 
 nRF9160: Serial LTE modem
 -------------------------
