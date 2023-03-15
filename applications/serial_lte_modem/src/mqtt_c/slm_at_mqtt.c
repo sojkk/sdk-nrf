@@ -233,11 +233,26 @@ static void mqtt_thread_fn(void *arg1, void *arg2, void *arg3)
 
 		if ((fds.revents & POLLIN) == POLLIN) {
 			err = mqtt_input(&client);
-			if (err != 0) {
+/*			
+		if(err!=0 && err!= -EBUSY) {
+			
+			LOG_ERR("ERROR: mqtt_input %d", err);
+			mqtt_abort(&client);
+			break;
+			
+		}
+		else if (err == -EBUSY) {
+		
+			continue;
+		}
+*/	
+		
+		if (err != 0) {
 				LOG_ERR("ERROR: mqtt_input %d", err);
 				mqtt_abort(&client);
 				break;
 			}
+
 		}
 		if ((fds.revents & POLLERR) == POLLERR) {
 			LOG_ERR("POLLERR");
