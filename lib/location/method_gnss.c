@@ -24,6 +24,8 @@
 #include <net/nrf_cloud_pgps.h>
 #endif
 
+#include <zephyr/drivers/gpio.h>
+
 LOG_MODULE_DECLARE(location, CONFIG_LOCATION_LOG_LEVEL);
 
 #if defined(CONFIG_NRF_CLOUD_AGPS) || defined(CONFIG_NRF_CLOUD_PGPS)
@@ -76,6 +78,14 @@ BUILD_ASSERT(
 #define VISIBILITY_DETECTION_EXEC_TIME CONFIG_LOCATION_METHOD_GNSS_VISIBILITY_DETECTION_EXEC_TIME
 #define VISIBILITY_DETECTION_SAT_LIMIT CONFIG_LOCATION_METHOD_GNSS_VISIBILITY_DETECTION_SAT_LIMIT
 
+/** debug pins **/
+static const struct device *dbg_port= DEVICE_DT_GET(DT_NODELABEL(gpio0));
+static const uint8_t  dbg_pins[] = {DT_GPIO_PIN(DT_ALIAS(dbg0), gpios),
+                                    DT_GPIO_PIN(DT_ALIAS(dbg1), gpios),
+                                    DT_GPIO_PIN(DT_ALIAS(dbg2), gpios) 
+								    };
+static bool is_dbg_init= false;
+
 static struct k_work method_gnss_start_work;
 static struct k_work method_gnss_pvt_work;
 #if defined(CONFIG_NRF_CLOUD_AGPS) || defined(CONFIG_NRF_CLOUD_PGPS)
@@ -113,6 +123,34 @@ static K_SEM_DEFINE(entered_rrc_idle, 1, 1);
 #if defined(CONFIG_NRF_CLOUD_AGPS) || defined(CONFIG_NRF_CLOUD_PGPS)
 static struct nrf_modem_gnss_agps_data_frame agps_request;
 #endif
+
+
+/** Debug */
+static void dbg_pins_init(void)
+{
+        int err;
+        
+		if (!device_is_ready(dbg_port)) {
+			LOG_ERR("Could not bind to debug port");
+		}
+		else
+		{
+			LOG_INF("Debug port setup");
+		}
+		
+
+		for (size_t i = 0; i < ARRAY_SIZE(dbg_pins); i++) {
+			err = gpio_pin_configure(dbg_port, dbg_pins[i],
+					GPIO_OUTPUT);
+			if (err) {
+					LOG_ERR("Unable to configure radio debug port");
+					dbg_port = NULL;
+				}
+                      		
+                        gpio_pin_set(dbg_port, dbg_pins[i], 0); 
+         }
+}
+
 
 #if defined(CONFIG_NRF_CLOUD_PGPS)
 static struct nrf_modem_gnss_agps_data_frame pgps_agps_request = {
@@ -557,6 +595,10 @@ int method_gnss_cancel(void)
 	int sleeping;
 	int rrc_idling;
 
+	/* Debug pin*/
+	gpio_pin_set(dbg_port, dbg_pins[0], 0); 
+	LOG_INF("Set debug pin LOW");
+
 	if ((err != 0) && (err != -NRF_EPERM)) {
 		LOG_ERR("Failed to stop GNSS");
 	}
@@ -849,6 +891,12 @@ static void method_gnss_positioning_work_fn(struct k_work *work)
 {
 	int err = 0;
 
+	/* Debug pins*/
+	if(!is_dbg_init) {
+		is_dbg_init = true;
+		dbg_pins_init();
+	}
+
 	if (!method_gnss_allowed_to_start()) {
 		/* Location request was cancelled while waiting for RRC idle or PSM. Do nothing. */
 		return;
@@ -894,6 +942,10 @@ static void method_gnss_positioning_work_fn(struct k_work *work)
 		running = false;
 		return;
 	}
+
+	/* Debug pin */
+	gpio_pin_set(dbg_port, dbg_pins[0], 1); 
+	LOG_INF("Set debug pin high");
 
 	err = nrf_modem_gnss_start();
 	if (err) {
