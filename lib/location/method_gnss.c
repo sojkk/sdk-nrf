@@ -80,11 +80,8 @@ BUILD_ASSERT(
 
 /** debug pins **/
 static const struct device *dbg_port= DEVICE_DT_GET(DT_NODELABEL(gpio0));
-static const uint8_t  dbg_pins[] = {DT_GPIO_PIN(DT_ALIAS(dbg0), gpios),
-                                    DT_GPIO_PIN(DT_ALIAS(dbg1), gpios),
-                                    DT_GPIO_PIN(DT_ALIAS(dbg2), gpios) 
-								    };
-static bool is_dbg_init= false;
+static const uint8_t  dbg_pins[] = {10, 9, 8};
+
 
 static struct k_work method_gnss_start_work;
 static struct k_work method_gnss_pvt_work;
@@ -891,12 +888,6 @@ static void method_gnss_positioning_work_fn(struct k_work *work)
 {
 	int err = 0;
 
-	/* Debug pins*/
-	if(!is_dbg_init) {
-		is_dbg_init = true;
-		dbg_pins_init();
-	}
-
 	if (!method_gnss_allowed_to_start()) {
 		/* Location request was cancelled while waiting for RRC idle or PSM. Do nothing. */
 		return;
@@ -1159,6 +1150,9 @@ int method_gnss_init(void)
 {
 	int err;
 	running = false;
+
+	/* Init Debug port */
+	dbg_pins_init();
 
 	err = nrf_modem_gnss_event_handler_set(method_gnss_event_handler);
 	if (err) {
