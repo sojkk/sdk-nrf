@@ -44,7 +44,7 @@ config TEST_TYPE_BLE
 
 config STA_SAMPLE_SSID
 	string "SSID"
-	default "coex_24"
+	default "STEALTH50"
 	help
 	  Specify the SSID to connect
 
@@ -80,11 +80,11 @@ config STA_SAMPLE_PASSWORD
 
 config NET_CONFIG_PEER_IPV4_ADDR
 	string "Peer IPv4 address"
-	default "192.168.1.202"
+	default "178.215.228.109"
 
 config NET_CONFIG_PEER_IPV4_PORT
 	int "Peer IPv4 port"
-	default 5001
+	default 9210
 
 config WIFI_THREAD_STACK_SIZE
 	int "Wi-Fi thread stack size"
