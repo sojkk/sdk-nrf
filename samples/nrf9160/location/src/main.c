@@ -152,6 +152,9 @@ static void location_gnss_low_accuracy_get(void)
 	location_config_defaults_set(&config, ARRAY_SIZE(methods), methods);
 	config.methods[0].gnss.accuracy = LOCATION_ACCURACY_LOW;
 
+	/* GNSS timeout is set to 1 second to force a failure. */
+	config.methods[0].gnss.timeout = 5 * 60 * MSEC_PER_SEC; //5 mins
+
 	printk("Requesting low accuracy GNSS location...\n");
 
 	err = location_request(&config);
@@ -174,6 +177,9 @@ static void location_gnss_high_accuracy_get(void)
 
 	location_config_defaults_set(&config, ARRAY_SIZE(methods), methods);
 	config.methods[0].gnss.accuracy = LOCATION_ACCURACY_HIGH;
+
+	/* GNSS timeout is set to 1 second to force a failure. */
+	config.methods[0].gnss.timeout =   5 * 60 * MSEC_PER_SEC;  // 5mins
 
 	printk("Requesting high accuracy GNSS location...\n");
 
@@ -221,12 +227,12 @@ static void location_gnss_periodic_get(void)
 {
 	int err;
 	struct location_config config;
-	enum location_method methods[] = {LOCATION_METHOD_GNSS, LOCATION_METHOD_CELLULAR};
+	enum location_method methods[] = {LOCATION_METHOD_GNSS};
 
 	location_config_defaults_set(&config, ARRAY_SIZE(methods), methods);
 	config.interval = 30;
 
-	printk("Requesting 30s periodic GNSS location with cellular fallback...\n");
+	printk("Requesting 30s periodic GNSS location...\n");
 
 	err = location_request(&config);
 	if (err) {
@@ -239,7 +245,7 @@ int main(void)
 {
 	int err;
 
-	printk("Location sample started\n\n");
+	printk("Location sample started - GNSS only\n\n");
 
 	err = nrf_modem_lib_init();
 	if (err) {
@@ -259,17 +265,18 @@ int main(void)
 	lte_lc_init();
 	lte_lc_register_handler(lte_event_handler);
 
-	/* Enable PSM. */
+	// Enable PSM.
 	lte_lc_psm_req(true);
+	
 	lte_lc_connect();
 
 	k_sem_take(&lte_connected, K_FOREVER);
 
-	/* A-GPS/P-GPS needs to know the current time. */
+	// A-GPS/P-GPS needs to know the current time.
 	if (IS_ENABLED(CONFIG_DATE_TIME)) {
 		printk("Waiting for current time\n");
 
-		/* Wait for an event from the Date Time library. */
+		// Wait for an event from the Date Time library. 
 		k_sem_take(&time_update_finished, K_MINUTES(10));
 
 		if (!date_time_is_valid()) {
@@ -286,19 +293,19 @@ int main(void)
 	/* The fallback case is run first, otherwise GNSS might get a fix even with a 1 second
 	 * timeout.
 	 */
-	location_with_fallback_get();
+//	location_with_fallback_get();
 
-	location_default_get();
+//	location_default_get();
 
 	location_gnss_low_accuracy_get();
 
-	location_gnss_high_accuracy_get();
+//	location_gnss_high_accuracy_get();
 
 #if defined(CONFIG_LOCATION_METHOD_WIFI)
 	location_wifi_get();
 #endif
 
-	location_gnss_periodic_get();
+//	location_gnss_periodic_get();
 
 	return 0;
 }
