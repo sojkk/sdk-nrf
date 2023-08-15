@@ -82,10 +82,7 @@ struct smp_buffer {
 static struct smp_buffer smp_rsp_buff;
 
 static char hash_value_secondary_slot[33];
-/*
-={0xA0,0x72,0xA6,0x85,0x86,0x7B,0x88,0xE2,0xFC,0xBD,0x7F,0x47,0xEC,0x45,0x3D,0x3F,\
-  0x16,0x6A,0x1A,0xA6,0xAC,0x4D,0x6F,0x78,0x51,0xB9,0x4C,0xCA,0xDE,0x00,0x68,0xB7,'\0'};
-*/
+//={0xA0,0x72,0xA6,0x85,0x86,0x7B,0x88,0xE2,0xFC,0xBD,0x7F,0x47,0xEC,0x45,0x3D,0x3F,0x16,0x6A,0x1A,0xA6,0xAC,0x4D,0x6F,0x78,0x51,0xB9,0x4C,0xCA,0xDE,0x00,0x68,0xB7,'\0'};
 static char hash_value_primary_slot[33];
 
 
@@ -1183,7 +1180,7 @@ void send_upload2(struct k_work *item)
 			update_complete = true;
 		}
 		LOG_INF("upload %d of %d length is %d\n", curr_addr,last_addr,upload_chunk);
-		//LOG_INF("upload %d of %d length is %d\n", curr_addr,last_addr,upload_chunk,curr_addr - start_addr);
+	  //LOG_INF("upload %d of %d length is %d\n", curr_addr,last_addr,upload_chunk,curr_addr - start_addr);
 
 		progress_print(curr_addr-start_addr, last_addr-start_addr);
 
@@ -1484,7 +1481,7 @@ static void button_echo(bool state)
 
 		++echo_cnt;
 		LOG_INF("Echo test: %d\n", echo_cnt);
-		//snLOG_INF(buffer, sizeof(buffer), "Echo message: %u", echo_cnt);
+	  //LOG_INF(buffer, sizeof(buffer), "Echo message: %u", echo_cnt);
 		ret = send_smp_echo(&dfu_smp, buffer);
 		if (ret) {
 			LOG_INF("Echo command send error (err: %d)\n", ret);
