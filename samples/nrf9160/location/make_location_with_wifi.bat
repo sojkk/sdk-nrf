@@ -1,0 +1,2 @@
+:: Positioning with nRF7002 WiFi
+west build -p -b nrf9160dk_nrf9160_ns -- -DSHIELD=nrf7002ek -DDTC_OVERLAY_FILE=nrf9160dk_with_nrf7002ek.overlay -DOVERLAY_CONFIG=overlay-nrf7002ek-wifi-scan-only.conf -DNCS_TOOLHCAIN_VERSION=2.4.0 
