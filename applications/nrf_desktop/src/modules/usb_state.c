@@ -24,7 +24,7 @@ LOG_MODULE_REGISTER(MODULE, CONFIG_DESKTOP_USB_STATE_LOG_LEVEL);
 #include "config_channel_transport.h"
 
 #include "hid_event.h"
-#include "usb_event.h"
+#include <caf/events/usb_event.h>
 #include "config_event.h"
 #include <caf/events/power_event.h>
 

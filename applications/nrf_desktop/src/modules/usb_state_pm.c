@@ -6,7 +6,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/types.h>
 
-#include "usb_event.h"
+#include <caf/events/usb_event.h>
 
 #define MODULE usb_state_pm
 #include <caf/events/module_state_event.h>

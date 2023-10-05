@@ -8,7 +8,7 @@
 #include <zephyr/sys/util.h>
 #include <stdio.h>
 
-#include "usb_event.h"
+#include <caf/events/usb_event.h>
 
 
 static const char * const state_name[] = {

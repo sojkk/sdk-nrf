@@ -15,6 +15,7 @@
 #include <zephyr/bluetooth/hci_vs.h>
 
 #include <caf/events/ble_common_event.h>
+#include <caf/events/usb_event.h>
 
 #ifdef CONFIG_BT_LL_SOFTDEVICE
 #include "sdc_hci_vs.h"
@@ -32,6 +33,7 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(MODULE, CONFIG_CAF_BLE_STATE_LOG_LEVEL);
 
+static size_t last_active_conn;
 
 struct bond_find_data {
 	const bt_addr_le_t *peer_address;
@@ -180,6 +182,7 @@ static void connected(struct bt_conn *conn, uint8_t error)
 		k_panic();
 	}
 	active_conn[i] = conn;
+	last_active_conn = i;
 
 	struct ble_peer_event *event = new_ble_peer_event();
 
@@ -437,7 +440,27 @@ static bool app_event_handler(const struct app_event_header *aeh)
 
 		return false;
 	}
+/*
+	if(is_usb_state_event(aeh)){
 
+		const struct usb_state_event *event = cast_usb_state_event(aeh);
+
+		switch (event->state) {
+		
+		case USB_STATE_POWERED:
+
+			disconnect_peer(active_conn[last_active_conn]);  
+
+			break;
+
+		default:
+			//Ignore. 
+			break;
+		}
+		return false;
+	
+	}
+*/
 	/* If event is unhandled, unsubscribe. */
 	__ASSERT_NO_MSG(false);
 
@@ -446,3 +469,5 @@ static bool app_event_handler(const struct app_event_header *aeh)
 APP_EVENT_LISTENER(MODULE, app_event_handler);
 APP_EVENT_SUBSCRIBE(MODULE, module_state_event);
 APP_EVENT_SUBSCRIBE_FINAL(MODULE, ble_peer_event);
+//Add 
+APP_EVENT_SUBSCRIBE(MODULE, usb_event);

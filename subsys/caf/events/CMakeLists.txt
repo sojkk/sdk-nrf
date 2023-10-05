@@ -60,4 +60,8 @@ zephyr_sources_ifdef(CONFIG_CAF_SENSOR_DATA_AGGREGATOR_EVENTS
 	sensor_data_aggregator_event.c
 )
 
+zephyr_sources_ifdef(CONFIG_DESKTOP_USB_ENABLE
+	usb_event.c
+)
+
 zephyr_linker_sources(SECTIONS module_id_list.ld)
