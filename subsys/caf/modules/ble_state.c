@@ -440,7 +440,7 @@ static bool app_event_handler(const struct app_event_header *aeh)
 
 		return false;
 	}
-/*
+
 	if(is_usb_state_event(aeh)){
 
 		const struct usb_state_event *event = cast_usb_state_event(aeh);
@@ -449,9 +449,20 @@ static bool app_event_handler(const struct app_event_header *aeh)
 		
 		case USB_STATE_POWERED:
 
+			//Disable BLE
+
 			disconnect_peer(active_conn[last_active_conn]);  
+			//bt_disable(); 
+
+			
 
 			break;
+
+		//case USB_STATE_DISCONNECTED:
+			//Re-enable BLE
+			//bt_enable(bt_ready);
+		//	break;
+
 
 		default:
 			//Ignore. 
@@ -460,7 +471,7 @@ static bool app_event_handler(const struct app_event_header *aeh)
 		return false;
 	
 	}
-*/
+
 	/* If event is unhandled, unsubscribe. */
 	__ASSERT_NO_MSG(false);
 
@@ -468,6 +479,6 @@ static bool app_event_handler(const struct app_event_header *aeh)
 }
 APP_EVENT_LISTENER(MODULE, app_event_handler);
 APP_EVENT_SUBSCRIBE(MODULE, module_state_event);
+APP_EVENT_SUBSCRIBE(MODULE, usb_state_event);  //Add
 APP_EVENT_SUBSCRIBE_FINAL(MODULE, ble_peer_event);
-//Add 
-APP_EVENT_SUBSCRIBE(MODULE, usb_event);
+

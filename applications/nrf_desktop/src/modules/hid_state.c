@@ -24,7 +24,7 @@
 #include "wheel_event.h"
 #include "hid_event.h"
 #include <caf/events/ble_common_event.h>
-#include "usb_event.h"
+#include <caf/events/usb_event.h>
 
 #include CONFIG_DESKTOP_HID_STATE_HID_KEYBOARD_LEDS_DEF_PATH
 #include "hid_keymap.h"

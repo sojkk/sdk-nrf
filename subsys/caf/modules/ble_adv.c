@@ -19,6 +19,8 @@
 #include <caf/events/ble_common_event.h>
 #include <caf/events/power_event.h>
 
+#include <caf/events/usb_event.h>
+
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(MODULE, CONFIG_CAF_BLE_ADV_LOG_LEVEL);
 
@@ -1060,7 +1062,36 @@ static bool app_event_handler(const struct app_event_header *aeh)
 	    is_wake_up_event(aeh)) {
 		return handle_wake_up_event(cast_wake_up_event(aeh));
 	}
+/*
+	if(is_usb_state_event(aeh)){
 
+		const struct usb_state_event *event = cast_usb_state_event(aeh);
+
+		switch (event->state) {
+
+			case USB_STATE_POWERED:
+
+			update_state(STATE_OFF);   // No advertising
+
+			break;
+			
+			case USB_STATE_DISCONNECTED:
+
+		
+			update_state(STATE_DELAYED_ACTIVE);
+		
+			break;
+
+
+		default:
+			//Ignore. 
+			break;
+
+		}
+
+
+	}
+*/	
 	/* If event is unhandled, unsubscribe. */
 	__ASSERT_NO_MSG(false);
 
@@ -1077,3 +1108,4 @@ APP_EVENT_SUBSCRIBE(MODULE, ble_peer_operation_event);
 APP_EVENT_SUBSCRIBE(MODULE, power_down_event);
 APP_EVENT_SUBSCRIBE(MODULE, wake_up_event);
 #endif /* CONFIG_CAF_BLE_ADV_PM_EVENTS */
+APP_EVENT_SUBSCRIBE_FINAL(MODULE, usb_state_event);  //Add
