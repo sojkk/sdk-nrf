@@ -1062,7 +1062,7 @@ static bool app_event_handler(const struct app_event_header *aeh)
 	    is_wake_up_event(aeh)) {
 		return handle_wake_up_event(cast_wake_up_event(aeh));
 	}
-/*
+
 	if(is_usb_state_event(aeh)){
 
 		const struct usb_state_event *event = cast_usb_state_event(aeh);
@@ -1070,15 +1070,19 @@ static bool app_event_handler(const struct app_event_header *aeh)
 		switch (event->state) {
 
 			case USB_STATE_POWERED:
+			
+			LOG_INF("ble_adv: USB_STATE_POWERED");
 
-			update_state(STATE_OFF);   // No advertising
+			ble_adv_stop();
+			//update_state(STATE_OFF);   // No advertising
 
 			break;
 			
 			case USB_STATE_DISCONNECTED:
 
-		
-			update_state(STATE_DELAYED_ACTIVE);
+			LOG_INF("ble_adv: USB_STATE_DISCONNECED");			
+			ble_adv_start();
+			//update_state(STATE_DELAYED_ACTIVE);
 		
 			break;
 
@@ -1088,10 +1092,11 @@ static bool app_event_handler(const struct app_event_header *aeh)
 			break;
 
 		}
-
+		
+	 return false;
 
 	}
-*/	
+	
 	/* If event is unhandled, unsubscribe. */
 	__ASSERT_NO_MSG(false);
 

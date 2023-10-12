@@ -450,19 +450,23 @@ static bool app_event_handler(const struct app_event_header *aeh)
 		case USB_STATE_POWERED:
 
 			//Disable BLE
-
+			LOG_INF("ble_state: USB_STATE_POWERED - disable BT");
 			disconnect_peer(active_conn[last_active_conn]);  
 			//bt_disable(); 
 
-			
-
+		
 			break;
-
-		//case USB_STATE_DISCONNECTED:
+/*
+		case USB_STATE_DISCONNECTED:
 			//Re-enable BLE
-			//bt_enable(bt_ready);
-		//	break;
-
+			LOG_INF("ble_state: USB_STATE_DISCONNECTED - re-enable BT");
+			
+			if (ble_state_init()) {
+				LOG_ERR("USB_STATE_DISCONNECTED -Cannot initialize");
+				module_set_state(MODULE_STATE_ERROR);
+			}
+			break;
+*/
 
 		default:
 			//Ignore. 
