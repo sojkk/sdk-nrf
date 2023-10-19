@@ -15,7 +15,7 @@
 #include <zephyr/bluetooth/hci_vs.h>
 
 #include <caf/events/ble_common_event.h>
-#include <caf/events/usb_event.h>
+//#include <caf/events/usb_event.h>
 
 #ifdef CONFIG_BT_LL_SOFTDEVICE
 #include "sdc_hci_vs.h"
@@ -441,6 +441,7 @@ static bool app_event_handler(const struct app_event_header *aeh)
 		return false;
 	}
 
+/*
 	if(is_usb_state_event(aeh)){
 
 		const struct usb_state_event *event = cast_usb_state_event(aeh);
@@ -456,7 +457,7 @@ static bool app_event_handler(const struct app_event_header *aeh)
 
 		
 			break;
-/*
+
 		case USB_STATE_DISCONNECTED:
 			//Re-enable BLE
 			LOG_INF("ble_state: USB_STATE_DISCONNECTED - re-enable BT");
@@ -466,7 +467,7 @@ static bool app_event_handler(const struct app_event_header *aeh)
 				module_set_state(MODULE_STATE_ERROR);
 			}
 			break;
-*/
+
 
 		default:
 			//Ignore. 
@@ -475,7 +476,7 @@ static bool app_event_handler(const struct app_event_header *aeh)
 		return false;
 	
 	}
-
+*/
 	/* If event is unhandled, unsubscribe. */
 	__ASSERT_NO_MSG(false);
 
@@ -483,6 +484,6 @@ static bool app_event_handler(const struct app_event_header *aeh)
 }
 APP_EVENT_LISTENER(MODULE, app_event_handler);
 APP_EVENT_SUBSCRIBE(MODULE, module_state_event);
-APP_EVENT_SUBSCRIBE(MODULE, usb_state_event);  //Add
+//APP_EVENT_SUBSCRIBE(MODULE, usb_state_event);  //Add
 APP_EVENT_SUBSCRIBE_FINAL(MODULE, ble_peer_event);
 

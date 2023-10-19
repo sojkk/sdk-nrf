@@ -18,6 +18,7 @@
 #include <caf/events/module_state_event.h>
 #include <caf/events/ble_common_event.h>
 #include <caf/events/power_event.h>
+#include <caf/events/keep_alive_event.h>
 
 #include <caf/events/usb_event.h>
 
@@ -48,6 +49,8 @@ static size_t req_grace_period_s;
 static bool req_wakeup;
 static bool req_fast_adv = true;
 static bool req_new_adv_session = true;
+
+static bool usb_active;  //<---
 
 static struct k_work adv_delayed_start;
 static struct k_work_delayable fast_adv_end;
@@ -393,6 +396,10 @@ static void ble_adv_start(void)
 	__ASSERT_NO_MSG((state == STATE_ACTIVE) || (state == STATE_GRACE_PERIOD));
 
 	int err = bt_le_adv_stop();
+
+	if (usb_active == true) {  //<---
+		return;
+	}
 
 	if (err) {
 		LOG_ERR("Cannot stop advertising (err %d)", err);
@@ -869,7 +876,8 @@ static bool handle_ble_peer_event(const struct ble_peer_event *event)
 		break;
 
 	case PEER_STATE_DISCONNECTED:
-		if (state != STATE_OFF) {
+		//if (state != STATE_OFF) {
+		if ( (state != STATE_OFF) || !usb_active ) {
 			req_new_adv_session = true;
 			req_fast_adv = true;
 			update_state(STATE_DELAYED_ACTIVE);
@@ -1034,6 +1042,36 @@ static bool handle_wake_up_event(const struct wake_up_event *event)
 	return false;
 }
 
+static bool handle_usb_event(const struct usb_state_event *event)
+{
+       struct bt_conn *conn = conn_get();
+
+       switch (event->state) {
+       case USB_STATE_ACTIVE:
+               if (conn) {
+                       disconnect_peer(conn);
+               };
+               usb_active = true;
+               
+               break;
+       case USB_STATE_DISCONNECTED:
+               usb_active = false;
+               keep_alive();
+               update_state(STATE_ACTIVE);
+
+       case USB_STATE_POWERED:
+       case USB_STATE_SUSPENDED:
+               usb_active = false;
+               break;
+
+       default:
+               __ASSERT_NO_MSG(false);
+               break;
+       }
+
+       return false;
+}
+
 static bool app_event_handler(const struct app_event_header *aeh)
 {
 	if (is_module_state_event(aeh)) {
@@ -1063,39 +1101,9 @@ static bool app_event_handler(const struct app_event_header *aeh)
 		return handle_wake_up_event(cast_wake_up_event(aeh));
 	}
 
-	if(is_usb_state_event(aeh)){
-
-		const struct usb_state_event *event = cast_usb_state_event(aeh);
-
-		switch (event->state) {
-
-			case USB_STATE_POWERED:
-			
-			LOG_INF("ble_adv: USB_STATE_POWERED");
-
-			ble_adv_stop();
-			//update_state(STATE_OFF);   // No advertising
-
-			break;
-			
-			case USB_STATE_DISCONNECTED:
-
-			LOG_INF("ble_adv: USB_STATE_DISCONNECED");			
-			ble_adv_start();
-			//update_state(STATE_DELAYED_ACTIVE);
-		
-			break;
-
-
-		default:
-			//Ignore. 
-			break;
-
-		}
-		
-	 return false;
-
-	}
+	if(is_usb_state_event(aeh)) {
+               return handle_usb_event(cast_usb_state_event(aeh));
+    }
 	
 	/* If event is unhandled, unsubscribe. */
 	__ASSERT_NO_MSG(false);
@@ -1113,4 +1121,4 @@ APP_EVENT_SUBSCRIBE(MODULE, ble_peer_operation_event);
 APP_EVENT_SUBSCRIBE(MODULE, power_down_event);
 APP_EVENT_SUBSCRIBE(MODULE, wake_up_event);
 #endif /* CONFIG_CAF_BLE_ADV_PM_EVENTS */
-APP_EVENT_SUBSCRIBE_FINAL(MODULE, usb_state_event);  //Add
+APP_EVENT_SUBSCRIBE(MODULE, usb_state_event);  //Add

@@ -60,6 +60,10 @@ zephyr_sources_ifdef(CONFIG_CAF_SENSOR_DATA_AGGREGATOR_EVENTS
 	sensor_data_aggregator_event.c
 )
 
+#target_sources_ifdef(CONFIG_DESKTOP_USB_ENABLE app
+#                       PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/usb_event.c)
+
+
 zephyr_sources_ifdef(CONFIG_DESKTOP_USB_ENABLE
 	usb_event.c
 )

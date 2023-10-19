@@ -36,7 +36,7 @@ static bool app_event_handler(const struct app_event_header *aeh)
 		case USB_STATE_SUSPENDED:
 			LOG_INF("USB suspended");
 			power_manager_restrict(MODULE_IDX(MODULE), POWER_MANAGER_LEVEL_SUSPENDED);
-			force_power_down();
+		//	force_power_down();   /<---
 			break;
 		default:
 			/* Ignore */
