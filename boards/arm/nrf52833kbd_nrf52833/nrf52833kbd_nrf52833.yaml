@@ -1,0 +1,12 @@
+identifier: nrf52833kbd_nrf52833
+name: nRF52833-Kbd-NRF52833
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gnuarmemb
+ram: 128
+flash: 512
+supported:
+  - ble
+  - gpio
