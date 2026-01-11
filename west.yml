@@ -64,7 +64,7 @@ manifest:
     # https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/zephyr/guides/modules.html
     - name: zephyr
       repo-path: sdk-zephyr
-      revision: pull/3409/head
+      revision: 365da0027ced3963b5c7d8906a99c02d71fb4993
       import:
         # In addition to the zephyr repository itself, NCS also
         # imports the contents of zephyr/west.yml at the above
@@ -143,11 +143,11 @@ manifest:
     - name: nrfxlib
       repo-path: sdk-nrfxlib
       path: nrfxlib
-      revision: c6627e79bef09b28cb8e56ad0be2e4b7aa9db760
+      revision: 1fc65562d63234e336efef4f8dbe9662d9b6df4b
     - name: trusted-firmware-m
       repo-path: sdk-trusted-firmware-m
       path: modules/tee/tf-m/trusted-firmware-m
-      revision: c43dd4ad5632538131ddb06efc4c664183d6c0de
+      revision: 5a12632fb63be82e6f0fdb309fff3fd665df9c93
     - name: psa-arch-tests
       repo-path: sdk-psa-arch-tests
       path: modules/tee/tf-m/psa-arch-tests
@@ -155,7 +155,7 @@ manifest:
     - name: matter
       repo-path: sdk-connectedhomeip
       path: modules/lib/matter
-      revision: b9ffabef417865b481d1d737c6d539ff8dab21a2
+      revision: e0fbbd3face21c0e70acda19c56ea2ea40a59e5d
       west-commands: scripts/west/west-commands.yml
       submodules:
         - name: nlio
@@ -217,7 +217,7 @@ manifest:
           upstream-sha: 1be6ca7253133a21a1e9fe0fbb4656e17d63a936
           compare-by-default: false
     - name: libmodem
-      revision: c1056e47eda61024a6937cda5574c97667467346
+      revision: 47715f47d3739a9e3a11f9635d4c2f9fc63126f7
       groups:
         - libmodem
     - name: openthread

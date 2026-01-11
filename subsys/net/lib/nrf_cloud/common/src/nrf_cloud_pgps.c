@@ -35,11 +35,7 @@ LOG_MODULE_REGISTER(nrf_cloud_pgps, CONFIG_NRF_CLOUD_GPS_LOG_LEVEL);
 #define DOWNLOAD_PROTOCOL "https://"
 #define PGPS_DEBUG	  0 /* set to 1 for extra logging */
 
-#if defined(CONFIG_NRF_CLOUD_PGPS_PREDICTION_PERIOD_120_MIN)
-#define PREDICTION_PERIOD 120
-#else
 #define PREDICTION_PERIOD 240
-#endif
 #define REPLACEMENT_THRESHOLD	      CONFIG_NRF_CLOUD_PGPS_REPLACEMENT_THRESHOLD
 #define FRAGMENT_SIZE		      CONFIG_NRF_CLOUD_PGPS_DOWNLOAD_FRAGMENT_SIZE
 #define PREDICTION_MIDPOINT_SHIFT_SEC (120 * SEC_PER_MIN)
@@ -494,6 +490,7 @@ int nrf_cloud_pgps_notify_prediction(void)
 	err = nrf_cloud_pgps_find_prediction(&prediction);
 	if (err == -ELOADING) {
 		loading_in_progress = true;
+		notified = false;
 		err = 0;
 	} else if (err < 0) {
 		if (!loading_in_progress) {

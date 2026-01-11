@@ -118,11 +118,13 @@ Security
   * Support for the WPA3-SAE and WPA3-SAE-PT in the :ref:`CRACEN driver <crypto_drivers_cracen>`.
   * Support for the HMAC KDF algorithm in the CRACEN driver.
     The algorithm implementation is conformant to the NIST SP 800-108 Rev. 1 recommendation.
+  * Support for the secp384r1 key storage in the :ref:`Key Management Unit (KMU) <ug_nrf54l_crypto_kmu_supported_key_types>`.
 
 Protocols
 =========
 
-|no_changes_yet_note|
+This section provides detailed lists of changes by :ref:`protocol <protocols>`.
+See `Samples`_ for lists of changes for the protocol-related samples.
 
 Bluetooth® LE
 -------------
@@ -141,8 +143,6 @@ DECT NR+
 
 Enhanced ShockBurst (ESB)
 -------------------------
-
-|no_changes_yet_note|
 
 * Fixed invalid radio configuration for legacy ESB protocol.
 
@@ -179,6 +179,8 @@ Wi-Fi®
 Applications
 ============
 
+This section provides detailed lists of changes by :ref:`application <applications>`.
+
 Connectivity bridge
 -------------------
 
@@ -197,24 +199,35 @@ Matter bridge
 nRF5340 Audio
 -------------
 
-* Added dynamic configuration of the number of channels for the encoder based on the configured audio locations.
-  The number of channels is set during runtime using the :c:func:`audio_system_encoder_num_ch_set` function.
-  This allows configuring mono or stereo encoding depending on the configured audio locations, potentially saving CPU and memory resources.
-* Added high CPU load callback using the Zephyr CPU load subsystem.
-  The callback uses a :c:func:`printk` function, as the logging subsystem is scheduled out if higher priority threads take all CPU time.
-  This makes debugging high CPU load situations easier in the application.
-  The threshold for high CPU load is set in :file:`peripherals.c` using :c:macro:`CPU_LOAD_HIGH_THRESHOLD_PERCENT`.
-* Updated the buildprog/programming script.
-  Devices are now halted before programming.
-  Furthermore, the devices are kept halted until they are all programmed, and then started together
-  with the headsets starting first.
-  This eases sniffing of advertisement packets.
+* Added:
+
+  * Dynamic configuration of the number of channels for the encoder based on the configured audio locations.
+    The number of channels is set during runtime using the :c:func:`audio_system_encoder_num_ch_set` function.
+    This allows configuring mono or stereo encoding depending on the configured audio locations, potentially saving CPU and memory resources.
+
+  * High CPU load callback using the Zephyr CPU load subsystem.
+    The callback uses a :c:func:`printk` function, as the logging subsystem is scheduled out if higher priority threads take all CPU time.
+    This makes debugging high CPU load situations easier in the application.
+    The threshold for high CPU load is set in :file:`peripherals.c` using :c:macro:`CPU_LOAD_HIGH_THRESHOLD_PERCENT`.
+
+* Updated:
+
+  * Switched to the new USB stack introduced in Zephyr 3.4.0.
+    For an end user, this change requires no action.
+    macOS will now work out of the box, fixing OCT-2154.
+
+  * Buildprog/programming script.
+    Devices are now halted before programming.
+    Furthermore, the devices are kept halted until they are all programmed, and then started together
+    with the headsets starting first.
+    This eases sniffing of advertisement packets.
 
 nRF Desktop
 -----------
 
 * Updated the :option:`CONFIG_DESKTOP_BT` Kconfig option to no longer select the deprecated :kconfig:option:`CONFIG_BT_SIGNING` Kconfig option.
   Application relies on Bluetooth LE security mode 1 and security level of at least 2 to ensure data confidentiality through encryption.
+* Updated memory map for RAM load configurations of nRF54LM20 target to increase KMU RAM section size to allow for secp384r1 key.
 
 nRF Machine Learning (Edge Impulse)
 -----------------------------------
@@ -249,7 +262,10 @@ Bluetooth Fast Pair samples
 Cellular samples
 ----------------
 
-|no_changes_yet_note|
+* :ref:`nrf_cloud_mqtt_fota` and :ref:`nrf_cloud_mqtt_device_message` samples:
+
+  * Added support for JWT authentication by enabling the :kconfig:option:`CONFIG_MODEM_JWT` Kconfig option.
+    Enabling this option in the :file:`prj.conf` is necessary for using UUID as the device ID.
 
 Cryptography samples
 --------------------
@@ -266,7 +282,13 @@ Debug samples
 DECT NR+ samples
 ----------------
 
-|no_changes_yet_note|
+* :ref:`dect_shell_application` sample:
+
+  * Updated:
+
+      * The ``dect rf_tool`` command - Major updates to improve usage for RX and TX testing.
+      * Scheduler - Dynamic flow control based on load tier to prevent modem out-of-memory errors.
+      * Settings - Continuous Wave (CW) support and possibility to disable Synchronization Training Field (STF) on TX and RX.
 
 Edge Impulse samples
 --------------------
@@ -284,7 +306,7 @@ Gazell samples
 |no_changes_yet_note|
 
 |ISE| samples
---------------
+-------------
 
 |no_changes_yet_note|
 
@@ -295,6 +317,8 @@ Keys samples
 
 Matter samples
 --------------
+
+* Refactored documentation for all Matter samples and applications to make it more consistent and easier to maintain and read.
 
 * :ref:`matter_manufacturer_specific_sample`:
 
@@ -357,7 +381,10 @@ Trusted Firmware-M (TF-M) samples
 Thread samples
 --------------
 
-|no_changes_yet_note|
+* Added support for the nRF54L Series DKs in the following Thread sample documents:
+
+  * :ref:`coap_client_sample`
+  * :ref:`coap_server_sample`
 
 Wi-Fi samples
 -------------
@@ -439,7 +466,10 @@ Multiprotocol Service Layer libraries
 Libraries for networking
 ------------------------
 
-|no_changes_yet_note|
+* :ref:`lib_nrf_cloud_pgps` library:
+
+  * Updated the range for the :kconfig:option:`CONFIG_NRF_CLOUD_PGPS_NUM_PREDICTIONS` and :kconfig:option:`CONFIG_NRF_CLOUD_PGPS_REPLACEMENT_THRESHOLD` Kconfig options to values supported by nRF Cloud.
+  * Removed the ``CONFIG_NRF_CLOUD_PGPS_PREDICTION_PERIOD`` Kconfig choice and related options (``CONFIG_NRF_CLOUD_PGPS_PREDICTION_PERIOD_120_MIN`` and ``CONFIG_NRF_CLOUD_PGPS_PREDICTION_PERIOD_240_MIN``).
 
 Libraries for NFC
 -----------------
@@ -471,7 +501,9 @@ See the changelog for each library in the :doc:`nrfxlib documentation <nrfxlib:R
 Scripts
 =======
 
-|no_changes_yet_note|
+This section provides detailed lists of changes by :ref:`script <scripts>`.
+
+* Added the :ref:`matter_sample_checker` script to check the consistency of Matter samples in the |NCS|.
 
 Integrations
 ============
@@ -490,8 +522,6 @@ Edge Impulse integration
 
 Memfault integration
 --------------------
-
-|no_changes_yet_note|
 
 * Added:
 

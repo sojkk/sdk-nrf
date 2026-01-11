@@ -27,6 +27,7 @@ Complete the following steps to add support for a proprietary protocol:
 
 #. For each bridged device type, create a ``MyProtocol MyDevice Data Provider`` class that inherits from the ``MyProtocol Data Provider`` class.
    These classes keep the state of the Matter device synchronized with the state of the device, using the following functions:
+
    * :c:func:`NotifyUpdateState` - Called to notify the bridge when the bridged device changed state.
    * :c:func:`UpdateState` - Called by the bridge when the bridged device should update its state (for example, turning a light on or off).
 
@@ -44,7 +45,7 @@ Complete the following steps to add support for a proprietary protocol:
 #. Create a ``MyProtocol Bridged Device Factory`` class that handles device creation, storage, and removal.
 
 #. Adapt the main application to use your newly created classes.
-   Create a new ``BRIDGED_DEVICE_MY_PROTOCOL`` configuration, go through the application code and find where the :ref:`CONFIG_BRIDGED_DEVICE_BT <CONFIG_BRIDGED_DEVICE_BT>` Kconfig option is used by the preprocessor.
+   Create a new ``BRIDGED_DEVICE_MY_PROTOCOL`` configuration, go through the application code and find where the :option:`CONFIG_BRIDGED_DEVICE_BT` Kconfig option is used by the preprocessor.
    Add support for your protocol in the found instances.
 
 An application with support for ``MyProtocol`` would work like this:

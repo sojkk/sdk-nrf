@@ -53,6 +53,7 @@ bluetooth:
     - nrf/cmake/
     - nrf/drivers/mpsl/
     - nrf/include/bluetooth/
+    - nrf/modules/memfault-firmware-sdk/
     - nrf/samples/bluetooth/
     - nrf/subsys/bluetooth/
     - nrf/subsys/mpsl/
@@ -1634,6 +1635,11 @@ ci_samples_zephyr_drivers_mbox:
   files:
     - nrf/samples/zephyr/drivers/mbox/
     - zephyr/samples/drivers/mbox/
+
+ci_samples_zephyr_boards_nordic_nrfx:
+  files:
+    - nrf/samples/zephyr/boards/nordic/nrfx/
+    - zephyr/samples/boards/nordic/nrfx/
 
 ci_samples_zephyr_boards_nordic_spis_wakeup:
   files:
