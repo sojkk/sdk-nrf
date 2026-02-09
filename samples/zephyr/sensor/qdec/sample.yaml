@@ -1,6 +1,5 @@
 sample:
-  description: Usage quadrature decoder sensor
-  name: qdec_sensor
+  name: Usage quadrature decoder sensor sample
 common:
   tags:
     - sensors
@@ -13,6 +12,7 @@ tests:
     platform_allow:
       - nrf54ls05dk/nrf54ls05b/cpuapp
       - nrf54ls05dk@0.0.0/nrf54ls05b/cpuapp
+      - nrf54ls05dk@0.2.0/nrf54ls05b/cpuapp
       - nrf7120dk/nrf7120/cpuapp
     integration_platforms:
       - nrf54ls05dk/nrf54ls05b/cpuapp

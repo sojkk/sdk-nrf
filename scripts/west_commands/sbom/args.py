@@ -10,7 +10,7 @@ Parsing and utility functions for west ncs-sbom command arguments.
 import argparse
 from pathlib import Path
 
-from common import SbomException
+from sbom_exceptions import SbomException
 
 DEFAULT_REPORT_NAME = 'sbom_report.html'
 
@@ -45,6 +45,7 @@ git-info
 class ArgsClass:
     ''' Lists all command line arguments for better type hinting. '''
     _initialized: bool = False
+    _processed: bool = False
     # arguments added by west
     help: 'bool|None'
     zephyr_base: 'str|None'
@@ -66,6 +67,10 @@ class ArgsClass:
     ar: 'str|None'
     ninja: 'str|None'
     help_detectors: bool
+    output_spdx: 'str|None'
+    package_supplier: 'str|None'
+    package_cpe: 'str|None'
+    debug_build_input_cache: 'str|None'
 
 
 def split_arg_list(text: str) -> 'list[str]':
@@ -116,8 +121,8 @@ def add_arguments(parser: argparse.ArgumentParser):
                              'detector')
     parser.add_argument('--allowed-in-map-file-only',
                         default='libgcc.a,'
-                                'libc_nano.a,libc++_nano.a,libm_nano.a,'
-                                'libc.a,libc++.a,libm.a',
+                                'libc_nano.a,libc++_nano.a,libm_nano.a,libstdc++_nano.a,'
+                                'libc.a,libc++.a,libstdc++.a,libm.a',
                         help='Comma separated list of file names which can be detected in a map '
                              'file, but not visible in the build system. Usually, automatically '
                              'linked toolchain libraries or libraries linked by specifying custom '
@@ -137,6 +142,14 @@ def add_arguments(parser: argparse.ArgumentParser):
                              'By default, it will be automatically detected.')
     parser.add_argument('--help-detectors', action='store_true',
                         help='Show help for each available detector and exit.')
+    parser.add_argument('--package-supplier', default=None,
+                        help='Set the supplier name for packages (for CRA/EO/FDA compliance). '
+                             'This will override auto-detected supplier from git URLs.')
+    parser.add_argument('--package-cpe', default=None,
+                        help='Set the Common Platform Enumeration (CPE) identifier for packages '
+                             '(for CRA/EO/FDA compliance). Format: cpe:2.3:...')
+    # Hidden arguments (for debug purposes only)
+    parser.add_argument('--debug-build-input-cache', default=None, help=argparse.SUPPRESS)
 
 
 def copy_arguments(source):
@@ -157,6 +170,10 @@ def init_args(allowed_detectors: dict):
         add_arguments(parser)
         copy_arguments(parser.parse_args())
 
+    if args._processed:
+        return
+    args._processed = True
+
     if args.help_detectors:
         print(DETECTORS_HELP)
         exit()
@@ -171,8 +188,10 @@ def init_args(allowed_detectors: dict):
     if (args.build_dir is None
             and (args.input_files is None or len(args.input_files) == 0)
             and (args.input_list_file is None or len(args.input_list_file) == 0)):
-        from input_build import get_default_build_dir  # Avoid circular import
-        default_build_dir = get_default_build_dir()
+        # Avoid circular import by importing lazily
+        import importlib
+        input_build = importlib.import_module('input_build')
+        default_build_dir = input_build.get_default_build_dir()
         if default_build_dir is not None:
             args.build_dir = [[default_build_dir]]
 

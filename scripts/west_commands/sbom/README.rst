@@ -123,6 +123,14 @@ You can also mix them, for example, to generate a report for the application and
 
   The :ref:`west_sbom Extracting from build` section describes in detail how to extract a list of files from a build directory.
 
+  You can use the ``-d`` option multiple times.
+  For example, to include both the ``mcuboot`` child image and the main application, use the following command:
+
+  .. parsed-literal::
+     :class: highlight
+
+     west ncs-sbom -d *build* -d *build/mcuboot*
+
   .. note::
       All files that are not dependencies of the :file:`zephyr/zephyr.elf` target are not taken as an input.
       If you modify the :file:`.elf` file after the linking, the modifications are not applied.
@@ -188,6 +196,28 @@ You can specify the format of the report output using the ``output`` argument.
   If you use the ``-d`` option, you do not need to specify any output argument.
   The :file:`sbom_report.html` file is generated in your build directory
   (the first one if you specify more than one build directory).
+
+* To generate an SPDX 2.2 format report (for CRA/EO 14028/FDA compliance):
+
+  .. parsed-literal::
+     :class: highlight
+
+     --output-spdx *file-name.spdx*
+
+  The SPDX report includes:
+
+  * Package supplier information (auto-detected from git URLs or specified via ``--package-supplier``)
+  * Component name, version, and download location
+  * Package URLs (PURLs) for unique package identification
+  * Common Platform Enumeration (CPE) identifiers when specified via ``--package-cpe``
+  * Dependency relationships showing supply chain connections
+  * File checksums and license information
+
+  This format meets requirements from:
+
+  * Cyber Resilience Act (CRA)
+  * U.S. Executive Order 14028
+  * FDA cybersecurity guidelines
 
 * To generate a cache database:
 
@@ -284,6 +314,29 @@ Detectors are executed from left to right using a list provided by the ``--licen
 Some detectors may run in parallel on all available CPU cores, which speeds up the detection time.
 Use the ``-n`` option to limit the number of parallel threads or processes.
 
+Compliance Options
+==================
+
+The following options enhance SBOM compliance with CRA, EO 14028, and FDA requirements:
+
+* ``--package-supplier`` - Set the supplier/vendor name for packages:
+
+  .. code-block:: bash
+
+     --package-supplier "Nordic Semiconductor ASA"
+
+  If not specified, the supplier is auto-detected from git repository owner/organization names.
+
+* ``--package-cpe`` - Set the Common Platform Enumeration (CPE) identifier:
+
+  .. code-block:: bash
+
+     --package-cpe "cpe:2.3:a:nordicsemi:nrf_connect_sdk:2.0.0:*:*:*:*:*:*:*"
+
+  CPE identifiers follow the CPE 2.3 specification and help identify software packages in vulnerability databases.
+
+These options ensure that generated SBOMs include all required fields for regulatory compliance.
+
 .. _west_sbom HTML report overview:
 
 HTML report overview
@@ -368,3 +421,10 @@ There are two additional methods for improving the correctness of the above algo
      :class: highlight
 
      -d build_directory *target.elf*:*file.map*
+
+Integration with the GN meta-build system
+=========================================
+
+The :file:`ncs-sbom` script reads a list of all commands needed to build provided targets.
+If there is a ``gn gen`` command, the script enters the command's build directory and tries to extract files from it using the same method as described earlier.
+The results are integrated with the main build directory results.

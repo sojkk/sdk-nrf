@@ -34,7 +34,7 @@ LOG_MODULE_REGISTER(memfault_ncs, CONFIG_MEMFAULT_NCS_LOG_LEVEL);
 
 #define IMEI_LEN 15
 
-#if defined(CONFIG_SOC_SERIES_NRF91X)
+#if defined(CONFIG_SOC_SERIES_NRF91)
 #define MEMFAULT_URL "https://goto.memfault.com/create-key/nrf91"
 #else
 #define MEMFAULT_URL "https://goto.memfault.com/create-key/nrf"
@@ -81,7 +81,11 @@ static char device_serial[CONFIG_MEMFAULT_NCS_DEVICE_ID_MAX_LEN + 1];
 /* Hardware version check */
 BUILD_ASSERT(sizeof(CONFIG_MEMFAULT_NCS_HW_VERSION) > 1, "Hardware version must be configured");
 
+#if defined(CONFIG_MEMFAULT_NCS_DEVICE_ID_HW_ID) && \
+	defined(CONFIG_HW_ID_LIBRARY_SOURCE_BT_DEVICE_ADDRESS)
+/* Forward declaration needed when fetching device info in this configuration */
 static int device_info_init(void);
+#endif
 
 void memfault_platform_get_device_info(sMemfaultDeviceInfo *info)
 {

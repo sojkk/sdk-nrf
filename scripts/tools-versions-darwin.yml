@@ -4,7 +4,7 @@
 python:
   version: 3.12.4
 git:
-  version: 2.37.3
+  version: 2.52.0
 cmake:
   version: 3.21.0
 ninja:
@@ -29,4 +29,4 @@ pip:
 nrfutil:
   version: 8.1.1
   subcommands:
-    device: 2.15.7
+    device: 2.16.1

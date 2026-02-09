@@ -11,10 +11,19 @@ common:
 tests:
   drivers.gpio.gpio_event:
     platform_allow:
+      - nrf54h20dk/nrf54h20/cpuapp
       - nrf54l15dk/nrf54l15/cpuapp
       - nrf54lm20dk/nrf54lm20a/cpuapp
       - nrf54ls05dk/nrf54ls05b/cpuapp
       - nrf54ls05dk@0.0.0/nrf54ls05b/cpuapp
+      - nrf54ls05dk@0.2.0/nrf54ls05b/cpuapp
       - nrf54lv10dk/nrf54lv10a/cpuapp
     integration_platforms:
       - nrf54l15dk/nrf54l15/cpuapp
+  drivers.gpio.gpio_event.h20_radio:
+    harness_config:
+      fixture: i2s_loopback # Loopback includes the pin pair needed for that test
+    platform_allow:
+      - nrf54h20dk/nrf54h20/cpurad
+    integration_platforms:
+      - nrf54h20dk/nrf54h20/cpurad

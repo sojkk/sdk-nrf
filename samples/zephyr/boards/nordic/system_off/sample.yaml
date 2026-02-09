@@ -8,12 +8,11 @@ tests:
   nrf.extended.sample.boards.nrf.system_off:
     integration_platforms:
       - nrf54ls05dk/nrf54ls05b/cpuapp
-      - nrf54lv10dk/nrf54lv10a/cpuapp
     platform_allow:
-      - nrf54ls05dk@0.0.0/nrf54ls05b/cpuapp
       - nrf54ls05dk/nrf54ls05b/cpuapp
+      - nrf54ls05dk@0.0.0/nrf54ls05b/cpuapp
+      - nrf54ls05dk@0.2.0/nrf54ls05b/cpuapp
       - nrf54lv10dk/nrf54lv10a/cpuapp
-      - nrf54lv10dk@0.2.0/nrf54lv10a/cpuapp
       - nrf54lv10dk/nrf54lv10a/cpuapp/ns
     harness: console
     harness_config:
@@ -26,12 +25,11 @@ tests:
   nrf.extended.sample.boards.nrf.system_off.retained_mem:
     integration_platforms:
       - nrf54ls05dk/nrf54ls05b/cpuapp
-      - nrf54lv10dk/nrf54lv10a/cpuapp
     platform_allow:
-      - nrf54ls05dk@0.0.0/nrf54ls05b/cpuapp
       - nrf54ls05dk/nrf54ls05b/cpuapp
+      - nrf54ls05dk@0.0.0/nrf54ls05b/cpuapp
+      - nrf54ls05dk@0.2.0/nrf54ls05b/cpuapp
       - nrf54lv10dk/nrf54lv10a/cpuapp
-      - nrf54lv10dk@0.2.0/nrf54lv10a/cpuapp
       - nrf54lv10dk/nrf54lv10a/cpuapp/ns
     extra_configs:
       - CONFIG_APP_USE_RETAINED_MEM=y
@@ -47,11 +45,13 @@ tests:
         - "Active Ticks:"
         - "Entering system off; press sw0 to restart"
   nrf.extended.sample.boards.nrf.system_off.grtc_wakeup:
-    platform_allow:
-      - nrf54ls05dk@0.0.0/nrf54ls05b/cpuapp
+    integration_platforms:
       - nrf54ls05dk/nrf54ls05b/cpuapp
+    platform_allow:
+      - nrf54ls05dk/nrf54ls05b/cpuapp
+      - nrf54ls05dk@0.0.0/nrf54ls05b/cpuapp
+      - nrf54ls05dk@0.2.0/nrf54ls05b/cpuapp
       - nrf54lv10dk/nrf54lv10a/cpuapp
-      - nrf54lv10dk@0.2.0/nrf54lv10a/cpuapp
       - nrf54lv10dk/nrf54lv10a/cpuapp/ns
       - nrf7120dk/nrf7120/cpuapp
     extra_configs:
@@ -73,11 +73,13 @@ tests:
         - "Retained data not supported"
         - "Entering system off; wait 2 seconds to restart"
   nrf.extended.sample.boards.nrf.system_off.retained_mem.grtc_wakeup:
-    platform_allow:
-      - nrf54ls05dk@0.0.0/nrf54ls05b/cpuapp
+    integration_platforms:
       - nrf54ls05dk/nrf54ls05b/cpuapp
+    platform_allow:
+      - nrf54ls05dk/nrf54ls05b/cpuapp
+      - nrf54ls05dk@0.0.0/nrf54ls05b/cpuapp
+      - nrf54ls05dk@0.2.0/nrf54ls05b/cpuapp
       - nrf54lv10dk/nrf54lv10a/cpuapp
-      - nrf54lv10dk@0.2.0/nrf54lv10a/cpuapp
       - nrf54lv10dk/nrf54lv10a/cpuapp/ns
       - nrf7120dk/nrf7120/cpuapp
     extra_configs:

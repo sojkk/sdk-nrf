@@ -129,7 +129,7 @@ BUILD_ASSERT(!IS_ENABLED(CONFIG_DESKTOP_HID_STATE_ENABLE) ||
 	     IS_ENABLED(CONFIG_DESKTOP_USB_SELECTIVE_REPORT_SUBSCRIPTION) ||
 	     (ARRAY_SIZE(usb_hid_device) <= 1));
 
-#if CONFIG_SOC_SERIES_NRF54HX
+#if CONFIG_SOC_SERIES_NRF54H
 BUILD_ASSERT(CONFIG_UDC_DWC2_USBHS_VBUS_READY_TIMEOUT > 0,
 	     "Timeout must be set to prevent the usbd_enable() function from blocking the "
 	     "application forever when the USB cable is not connected.");
@@ -1212,6 +1212,20 @@ static int handle_usbd_state_on_status_change(enum usbd_msg_type type)
 
 	case USBD_MSG_VBUS_REMOVED:
 		if (usb_enabled) {
+			/* Call iface_ready callback handler earlier to workaround the race issue
+			 * where the callback informing that USB HID interface is not ready is
+			 * called too late during usbd_disable call triggered by application. The
+			 * issue causes a temporary misalignment of USB HID interface state while
+			 * performing the usbd_disable operation - USB stack is already aware that
+			 * USB HID interface is disabled and rejects HID input reports provided by
+			 * the application which is not yet aware of the USB HID interface state
+			 * change. Calling the iface_ready callback handler earlier prevents the
+			 * application from trying to provide HID input reports.
+			 */
+			for (size_t i = 0; i < ARRAY_SIZE(usb_hid_device); i++) {
+				iface_ready_next(usb_hid_device[i].dev, false);
+			}
+
 			err = usbd_disable(usbd_ctx);
 			if (err) {
 				LOG_ERR("usbd_disable failed (err: %d)", err);

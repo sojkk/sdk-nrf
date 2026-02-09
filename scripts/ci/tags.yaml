@@ -44,7 +44,7 @@
 #    from sdk-mcuboot: bootloader/mcuboot etc.
 #    Paths should match location after checking out sdk-nrf (+ west update)
 
-bluetooth:
+ci_samples_bluetooth:
   files:
     - modules/crypto/mbedtls/
     - modules/crypto/oberon-psa-crypto/
@@ -61,7 +61,6 @@ bluetooth:
     - nrf/subsys/nrf_security/
     - nrf/sysbuild/
     - nrf/tests/bluetooth/
-    - nrf/tests/subsys/bluetooth/
     - nrfxlib/crypto/
     - nrfxlib/mpsl/fem/include/
     - nrfxlib/mpsl/include/
@@ -321,9 +320,6 @@ ci_samples_nfc:
   files:
     - nrf/include/nfc/
     - nrf/lib/st25r3911b/
-    - nrf/samples/bluetooth/central_nfc_pairing/
-    - nrf/samples/bluetooth/peripheral_hids_keyboard/
-    - nrf/samples/bluetooth/peripheral_nfc_pairing/
     - nrf/samples/nfc/
     - nrf/subsys/nfc/
     - nrfxlib/nfc/
@@ -1882,8 +1878,3 @@ ci_tests_subsys_west_flash:
     - nrf/tests/subsys/west_flash/
     - zephyr/boards/nordic/
     - nrf/boards/nordic/54*
-
-ci_tests_zephyr_board_nrf_throttling:
-  files:
-    - nrf/tests/zephyr/boards/nrf/rram_throttling/
-    - zephyr/tests/boards/nrf/rram_throttling/
